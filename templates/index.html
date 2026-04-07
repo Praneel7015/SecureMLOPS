@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure ML Inference System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    {% if not session.get('user') %}
+        <main class="login-shell">
+            <section class="login-card">
+                <div class="login-brand">
+                    <div class="brand-mark">SM</div>
+                    <div>
+                        <p class="eyebrow">Secure ML Inference</p>
+                        <h1>Sign in to start secure inference</h1>
+                    </div>
+                </div>
+
+                <p class="login-copy">
+                    Access the full security pipeline and review every decision stage in one clean workflow.
+                </p>
+
+                <form action="{{ url_for('login') }}" method="post" class="stack">
+                    <label>Username</label>
+                    <input type="text" name="username" placeholder="person1 or person2" required>
+                    <label>Password</label>
+                    <input type="password" name="password" placeholder="secure123" required>
+                    <button type="submit">Sign In</button>
+                </form>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <section class="messages">
+                            {% for category, message in messages %}
+                                <div class="message {{ category }}">{{ message }}</div>
+                            {% endfor %}
+                        </section>
+                    {% endif %}
+                {% endwith %}
+            </section>
+        </main>
+    {% else %}
+        <div class="app-shell">
+            <header class="topbar">
+                <div class="topbar-logo">
+                    <span class="dot"></span>
+                    <span>Secure ML Inference</span>
+                </div>
+                <div class="topbar-user">
+                    <div class="avatar">{{ session['user'][0]|upper }}</div>
+                    <span class="uname">{{ session['user'] }}</span>
+                    <span class="role-badge">Authenticated</span>
+                    <form action="{{ url_for('logout') }}" method="post">
+                        <button type="submit" class="btn-logout">Logout</button>
+                    </form>
+                </div>
+            </header>
+
+            <main class="app-layout">
+                <aside class="left-panel">
+                    <p class="panel-title">Input</p>
+                    <div class="hero-copy">
+                        <h1>Run one image. Review the full security pipeline.</h1>
+                        <p>
+                            Choose a sample or upload your own image. The system will execute authentication,
+                            validation, integrity checks, inference, anomaly and adversarial analysis,
+                            then generate a final risk decision.
+                        </p>
+                    </div>
+
+                    <form action="{{ url_for('analyze') }}" method="post" enctype="multipart/form-data" class="upload-card">
+                        {% if sample_images %}
+                            <div class="sample-section">
+                                <label>Sample images</label>
+                                <div class="sample-grid">
+                                    {% for sample in sample_images %}
+                                        <label class="sample-card">
+                                            <input
+                                                type="radio"
+                                                name="sample_image"
+                                                value="{{ sample.name }}"
+                                                {% if selected_sample == sample.name %}checked{% endif %}
+                                            >
+                                            <img src="{{ sample.url }}" alt="{{ sample.name }}" class="sample-thumb">
+                                            <span class="sample-name">{{ sample.name }}</span>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <label>Upload image</label>
+                        <input type="file" name="image" accept=".jpg,.jpeg,.png">
+                        <p class="helper">Use one sample or upload a JPG, JPEG, or PNG up to 5 MB.</p>
+                        <button type="submit">Analyze Image</button>
+                    </form>
+
+                    {% if selected_image_url %}
+                        <div class="preview-card">
+                            <p class="panel-title">Last Input</p>
+                            <img src="{{ selected_image_url }}" alt="Uploaded image preview" class="preview-image">
+                            <p class="preview-name">{{ result.filename }}</p>
+                        </div>
+                    {% endif %}
+
+                    {% if result and result.audit_log %}
+                        <div class="log-panel">
+                            <p class="panel-title">Audit Log</p>
+                            <div class="log-entries">
+                                {% for entry in result.audit_log %}
+                                    <div class="log-entry log-{{ entry.decision }}">
+                                        <span class="log-stage">{{ entry.stage }}</span>
+                                        <span class="log-message">{{ entry.message }}</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </aside>
+
+                <section class="right-panel">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            <section class="messages">
+                                {% for category, message in messages %}
+                                    <div class="message {{ category }}">{{ message }}</div>
+                                {% endfor %}
+                            </section>
+                        {% endif %}
+                    {% endwith %}
+
+                    {% if not result %}
+                        <section class="welcome-state">
+                            <div class="welcome-mark">SM</div>
+                            <h2>Pipeline ready</h2>
+                            <p>
+                                Submit an image to see each stage and the final decision.
+                            </p>
+                        </section>
+                    {% else %}
+                        <section class="pipeline-header">
+                            <div>
+                                <p class="eyebrow">Pipeline Execution</p>
+                                <h2>{{ result.status|replace('_', ' ')|title }}</h2>
+                                <p class="pipeline-subtitle">{{ result.timestamp }}</p>
+                            </div>
+                            <span class="risk-pill risk-{{ result.risk_level|lower }}">{{ result.risk_level }}</span>
+                        </section>
+
+                        <section class="pipeline-steps">
+                            {% for step in result.pipeline_steps %}
+                                <article class="step-row">
+                                    <div class="step-connector">
+                                        <div class="node node-{{ step.status }}">{{ step.number }}</div>
+                                        {% if not loop.last %}
+                                            <div class="line"></div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="step-card step-{{ step.status }}">
+                                        <div class="step-header">
+                                            <div>
+                                                <p class="step-kicker">{{ step.label }}</p>
+                                                <h3>{{ step.title }}</h3>
+                                            </div>
+                                            <span class="step-badge badge-{{ step.status }}">{{ step.badge }}</span>
+                                        </div>
+
+                                        <p class="step-body">{{ step.body }}</p>
+
+                                    <div class="detail-grid">
+                                        {% for detail in step.details %}
+                                            <div class="detail-item">
+                                                <span class="detail-key">{{ detail.label }}</span>
+                                                <span class="detail-value">{{ detail.value }}</span>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+
+                                        {% if step.top5 %}
+                                            <div class="top5-list">
+                                                {% for item in step.top5 %}
+                                                    <div class="top5-item {% if loop.first %}top1{% endif %}">
+                                                        <span class="top5-label">{{ item.label }}</span>
+                                                        <div class="top5-bar-wrap">
+                                                            <div class="top5-bar-fill" style="width: {{ '%.2f'|format(item.confidence * 100) }}%"></div>
+                                                        </div>
+                                                        <span class="top5-pct">{{ '%.2f'|format(item.confidence * 100) }}%</span>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </article>
+                            {% endfor %}
+                        </section>
+
+                        <section class="verdict-card verdict-{{ result.verdict_style }}">
+                            <div class="verdict-header">
+                                <div>
+                                    <p class="eyebrow">Final Decision</p>
+                                    <h2>{{ result.decision_reason }}</h2>
+                                </div>
+                                <span class="risk-pill risk-{{ result.risk_level|lower }}">{{ result.risk_level }}</span>
+                            </div>
+
+                            <div class="verdict-grid">
+                                <div>
+                                    <span class="detail-key">System status</span>
+                                    <span class="detail-value">{{ result.status|replace('_', ' ')|title }}</span>
+                                </div>
+                                <div>
+                                    <span class="detail-key">Uploaded file</span>
+                                    <span class="detail-value">{{ result.filename or 'No file stored' }}</span>
+                                </div>
+                                <div>
+                                    <span class="detail-key">ML verdict</span>
+                                    <span class="detail-value">{{ result.get('verdict')|title if result.get('verdict') else 'Not available' }}</span>
+                                </div>
+                                <div>
+                                    <span class="detail-key">Prediction</span>
+                                    <span class="detail-value">{{ result.get('prediction') or 'Prediction withheld' }}</span>
+                                </div>
+                                <div>
+                                    <span class="detail-key">Confidence</span>
+                                    <span class="detail-value">
+                                        {% if result.get('confidence') is not none %}
+                                            {{ '%.2f'|format(result.get('confidence') * 100) }}%
+                                        {% else %}
+                                            Not available
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div>
+                                    <span class="detail-key">Observations</span>
+                                    <span class="detail-value">
+                                        {% if result.get('issues') %}
+                                            {{ result.get('issues')|join('; ') }}
+                                        {% else %}
+                                            No security observations recorded.
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        </section>
+                    {% endif %}
+                </section>
+            </main>
+        </div>
+    {% endif %}
+</body>
+</html>

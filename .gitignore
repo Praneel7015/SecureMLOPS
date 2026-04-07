@@ -1,0 +1,38 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.mypy_cache/
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Test and coverage outputs
+.coverage
+htmlcov/
+
+# OS and editor artifacts
+__MACOSX/
+.DS_Store
+Thumbs.db
+.idea/
+
+# Runtime data
+logs/*
+!logs/.gitkeep
+uploads/*
+!uploads/.gitkeep
+
+# Local secrets and overrides
+.env
+.env.*

@@ -1,254 +1,474 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure ML Inference System</title>
+    <title>SecureML Inference System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    {% if not session.get('user') %}
-        <main class="login-shell">
-            <section class="login-card">
-                <div class="login-brand">
-                    <div class="brand-mark">SM</div>
-                    <div>
-                        <p class="eyebrow">Secure ML Inference</p>
-                        <h1>Sign in to start secure inference</h1>
-                    </div>
-                </div>
 
-                <p class="login-copy">
-                    Access the full security pipeline and review every decision stage in one clean workflow.
-                </p>
+{% if not session.get('user') %}
+<!-- ═══════════════════════════════ LOGIN ═══════════════════════════════════ -->
+<div class="auth-wrap">
+    <button class="theme-btn auth-theme-btn" data-theme-toggle aria-label="Toggle theme">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
 
-                <form action="{{ url_for('login') }}" method="post" class="stack">
-                    <label>Username</label>
-                    <input type="text" name="username" placeholder="person1 or person2" required>
-                    <label>Password</label>
-                    <input type="password" name="password" placeholder="secure123" required>
-                    <button type="submit">Sign In</button>
-                </form>
-
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        <section class="messages">
-                            {% for category, message in messages %}
-                                <div class="message {{ category }}">{{ message }}</div>
-                            {% endfor %}
-                        </section>
-                    {% endif %}
-                {% endwith %}
-            </section>
-        </main>
-    {% else %}
-        <div class="app-shell">
-            <header class="topbar">
-                <div class="topbar-logo">
-                    <span class="dot"></span>
-                    <span>Secure ML Inference</span>
-                </div>
-                <div class="topbar-user">
-                    <div class="avatar">{{ session['user'][0]|upper }}</div>
-                    <span class="uname">{{ session['user'] }}</span>
-                    <span class="role-badge">Authenticated</span>
-                    <form action="{{ url_for('logout') }}" method="post">
-                        <button type="submit" class="btn-logout">Logout</button>
-                    </form>
-                </div>
-            </header>
-
-            <main class="app-layout">
-                <aside class="left-panel">
-                    <p class="panel-title">Input</p>
-                    <div class="hero-copy">
-                        <h1>Run one image. Review the full security pipeline.</h1>
-                        <p>
-                            Choose a sample or upload your own image. The system will execute authentication,
-                            validation, integrity checks, inference, anomaly and adversarial analysis,
-                            then generate a final risk decision.
-                        </p>
-                    </div>
-
-                    <form action="{{ url_for('analyze') }}" method="post" enctype="multipart/form-data" class="upload-card">
-                        {% if sample_images %}
-                            <div class="sample-section">
-                                <label>Sample images</label>
-                                <div class="sample-grid">
-                                    {% for sample in sample_images %}
-                                        <label class="sample-card">
-                                            <input
-                                                type="radio"
-                                                name="sample_image"
-                                                value="{{ sample.name }}"
-                                                {% if selected_sample == sample.name %}checked{% endif %}
-                                            >
-                                            <img src="{{ sample.url }}" alt="{{ sample.name }}" class="sample-thumb">
-                                            <span class="sample-name">{{ sample.name }}</span>
-                                        </label>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        {% endif %}
-
-                        <label>Upload image</label>
-                        <input type="file" name="image" accept=".jpg,.jpeg,.png">
-                        <p class="helper">Use one sample or upload a JPG, JPEG, or PNG up to 5 MB.</p>
-                        <button type="submit">Analyze Image</button>
-                    </form>
-
-                    {% if selected_image_url %}
-                        <div class="preview-card">
-                            <p class="panel-title">Last Input</p>
-                            <img src="{{ selected_image_url }}" alt="Uploaded image preview" class="preview-image">
-                            <p class="preview-name">{{ result.filename }}</p>
-                        </div>
-                    {% endif %}
-
-                    {% if result and result.audit_log %}
-                        <div class="log-panel">
-                            <p class="panel-title">Audit Log</p>
-                            <div class="log-entries">
-                                {% for entry in result.audit_log %}
-                                    <div class="log-entry log-{{ entry.decision }}">
-                                        <span class="log-stage">{{ entry.stage }}</span>
-                                        <span class="log-message">{{ entry.message }}</span>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    {% endif %}
-                </aside>
-
-                <section class="right-panel">
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                            <section class="messages">
-                                {% for category, message in messages %}
-                                    <div class="message {{ category }}">{{ message }}</div>
-                                {% endfor %}
-                            </section>
-                        {% endif %}
-                    {% endwith %}
-
-                    {% if not result %}
-                        <section class="welcome-state">
-                            <div class="welcome-mark">SM</div>
-                            <h2>Pipeline ready</h2>
-                            <p>
-                                Submit an image to see each stage and the final decision.
-                            </p>
-                        </section>
-                    {% else %}
-                        <section class="pipeline-header">
-                            <div>
-                                <p class="eyebrow">Pipeline Execution</p>
-                                <h2>{{ result.status|replace('_', ' ')|title }}</h2>
-                                <p class="pipeline-subtitle">{{ result.timestamp }}</p>
-                            </div>
-                            <span class="risk-pill risk-{{ result.risk_level|lower }}">{{ result.risk_level }}</span>
-                        </section>
-
-                        <section class="pipeline-steps">
-                            {% for step in result.pipeline_steps %}
-                                <article class="step-row">
-                                    <div class="step-connector">
-                                        <div class="node node-{{ step.status }}">{{ step.number }}</div>
-                                        {% if not loop.last %}
-                                            <div class="line"></div>
-                                        {% endif %}
-                                    </div>
-
-                                    <div class="step-card step-{{ step.status }}">
-                                        <div class="step-header">
-                                            <div>
-                                                <p class="step-kicker">{{ step.label }}</p>
-                                                <h3>{{ step.title }}</h3>
-                                            </div>
-                                            <span class="step-badge badge-{{ step.status }}">{{ step.badge }}</span>
-                                        </div>
-
-                                        <p class="step-body">{{ step.body }}</p>
-
-                                    <div class="detail-grid">
-                                        {% for detail in step.details %}
-                                            <div class="detail-item">
-                                                <span class="detail-key">{{ detail.label }}</span>
-                                                <span class="detail-value">{{ detail.value }}</span>
-                                                </div>
-                                            {% endfor %}
-                                        </div>
-
-                                        {% if step.top5 %}
-                                            <div class="top5-list">
-                                                {% for item in step.top5 %}
-                                                    <div class="top5-item {% if loop.first %}top1{% endif %}">
-                                                        <span class="top5-label">{{ item.label }}</span>
-                                                        <div class="top5-bar-wrap">
-                                                            <div class="top5-bar-fill" style="width: {{ '%.2f'|format(item.confidence * 100) }}%"></div>
-                                                        </div>
-                                                        <span class="top5-pct">{{ '%.2f'|format(item.confidence * 100) }}%</span>
-                                                    </div>
-                                                {% endfor %}
-                                            </div>
-                                        {% endif %}
-                                    </div>
-                                </article>
-                            {% endfor %}
-                        </section>
-
-                        <section class="verdict-card verdict-{{ result.verdict_style }}">
-                            <div class="verdict-header">
-                                <div>
-                                    <p class="eyebrow">Final Decision</p>
-                                    <h2>{{ result.decision_reason }}</h2>
-                                </div>
-                                <span class="risk-pill risk-{{ result.risk_level|lower }}">{{ result.risk_level }}</span>
-                            </div>
-
-                            <div class="verdict-grid">
-                                <div>
-                                    <span class="detail-key">System status</span>
-                                    <span class="detail-value">{{ result.status|replace('_', ' ')|title }}</span>
-                                </div>
-                                <div>
-                                    <span class="detail-key">Uploaded file</span>
-                                    <span class="detail-value">{{ result.filename or 'No file stored' }}</span>
-                                </div>
-                                <div>
-                                    <span class="detail-key">ML verdict</span>
-                                    <span class="detail-value">{{ result.get('verdict')|title if result.get('verdict') else 'Not available' }}</span>
-                                </div>
-                                <div>
-                                    <span class="detail-key">Prediction</span>
-                                    <span class="detail-value">{{ result.get('prediction') or 'Prediction withheld' }}</span>
-                                </div>
-                                <div>
-                                    <span class="detail-key">Confidence</span>
-                                    <span class="detail-value">
-                                        {% if result.get('confidence') is not none %}
-                                            {{ '%.2f'|format(result.get('confidence') * 100) }}%
-                                        {% else %}
-                                            Not available
-                                        {% endif %}
-                                    </span>
-                                </div>
-                                <div>
-                                    <span class="detail-key">Observations</span>
-                                    <span class="detail-value">
-                                        {% if result.get('issues') %}
-                                            {{ result.get('issues')|join('; ') }}
-                                        {% else %}
-                                            No security observations recorded.
-                                        {% endif %}
-                                    </span>
-                                </div>
-                            </div>
-                        </section>
-                    {% endif %}
-                </section>
-            </main>
+    <div class="auth-card">
+        <div class="auth-brand">
+            <div class="auth-mark">
+                <svg viewBox="0 0 28 28" fill="none"><path d="M14 3L25 8.5V15.5C25 20.2 20 24 14 25C8 24 3 20.2 3 15.5V8.5L14 3Z" fill="currentColor" opacity="0.15" stroke="currentColor" stroke-width="1.5"/><path d="M10 14l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div>
+                <p class="eyebrow">Secure ML Inference</p>
+                <h1 class="auth-title">Sign in to continue</h1>
+            </div>
         </div>
-    {% endif %}
+
+        <p class="auth-subtitle">
+            Authenticate to access the full 9-stage security pipeline —
+            from input validation through adversarial detection.
+        </p>
+
+        <form action="{{ url_for('login') }}" method="post" class="auth-form">
+            <div class="field-group">
+                <label class="field-label" for="username">Username</label>
+                <input class="field-input" type="text" id="username" name="username" placeholder="person1 or person2" required autocomplete="username">
+            </div>
+            <div class="field-group">
+                <label class="field-label" for="password">Password</label>
+                <input class="field-input" type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password">
+            </div>
+            <button class="btn-primary" type="submit">
+                <span>Continue</span>
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+            </button>
+        </form>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="flash-group">
+                {% for category, message in messages %}
+                <div class="flash flash-{{ category }}">
+                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 11a.75.75 0 1 1 0-1.5A.75.75 0 0 1 8 12zm.75-3.5a.75.75 0 0 1-1.5 0v-3a.75.75 0 0 1 1.5 0v3z"/></svg>
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="auth-hint">
+            <span class="mono">person1</span> or <span class="mono">person2</span> / <span class="mono">secure123</span>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<!-- ═══════════════════════════════ APP ════════════════════════════════════ -->
+<div class="app">
+
+    <!-- LAYOUT -->
+    <div class="layout">
+
+        <!-- LEFT: INPUT PANEL -->
+        <aside class="input-panel" id="inputPanel">
+            <div class="panel-toolbar">
+                <div class="panel-brand-copy">
+                    <span class="panel-kicker">SecureML</span>
+                    <span class="top-name">Workflow Builder</span>
+                    <span class="top-online">
+                        <span class="online-dot"></span>
+                        System Online
+                    </span>
+                </div>
+                <div class="panel-toolbar-actions">
+                    <button class="theme-btn panel-collapse-btn panel-action-collapse" type="button" id="toggleInputPanel" aria-label="Collapse input panel" aria-controls="inputPanelBody" aria-expanded="true" title="Collapse panel">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="panel-utility-row">
+                <a class="btn-ghost panel-settings-link" href="{{ url_for('settings') }}">Settings</a>
+                <button class="theme-btn panel-action-theme" data-theme-toggle aria-label="Toggle theme" title="Theme">
+                    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                </button>
+            </div>
+
+            <div class="input-panel-body" id="inputPanelBody">
+            <div class="panel-head">
+                <p class="eyebrow">Input</p>
+                <h2 class="panel-title">Image Analysis</h2>
+                <p class="panel-sub">Select a sample or upload your own. The pipeline will run 9 security stages and return a risk decision.</p>
+            </div>
+
+            <form action="{{ url_for('analyze') }}" method="post" enctype="multipart/form-data" class="input-form">
+
+                {% if sample_images %}
+                <div class="form-section">
+                    <p class="section-label">Sample gallery</p>
+                    <div class="sample-grid">
+                        {% for sample in sample_images %}
+                        <label class="sample-item">
+                            <input type="radio" name="sample_image" value="{{ sample.name }}" {% if selected_sample == sample.name %}checked{% endif %}>
+                            <img src="{{ sample.url }}" alt="{{ sample.name }}" class="sample-img" loading="lazy">
+                            <span class="sample-name">{{ sample.name }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="form-section">
+                    <p class="section-label">Upload image</p>
+                    <label class="upload-zone" for="fileInput">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        <span class="upload-text">Drop image or click to browse</span>
+                        <span class="upload-hint">JPG · JPEG · PNG · max 5 MB</span>
+                        <input type="file" id="fileInput" name="image" accept=".jpg,.jpeg,.png">
+                    </label>
+                    <p class="file-preview-name" id="filePreviewName"></p>
+                </div>
+
+                <button class="btn-primary btn-full" type="submit">
+                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="10" r="8"/><path d="M10 6v4l3 3"/></svg>
+                    Run Analysis
+                </button>
+            </form>
+
+            {% if selected_image_url %}
+            <div class="preview-block">
+                <p class="eyebrow">Last Input</p>
+                <img src="{{ selected_image_url }}" alt="Submitted image preview" class="preview-img">
+                {% if result and result.filename %}
+                <p class="preview-filename mono">{{ result.filename }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% if result and result.audit_log %}
+            <div class="audit-block">
+                <p class="eyebrow">Audit Log</p>
+                <div class="audit-list">
+                    {% for entry in result.audit_log %}
+                    <div class="audit-row audit-{{ entry.decision }}">
+                        <span class="audit-stage mono">{{ entry.stage }}</span>
+                        <span class="audit-msg">{{ entry.message }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            </div>
+        </aside>
+
+        <!-- RIGHT: PIPELINE PANEL -->
+        <main class="pipeline-panel">
+
+            <div class="collapsed-toolbar">
+                <button class="menu-btn" type="button" id="openInputPanel" aria-label="Open input panel" title="Open panel">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+                </button>
+                <div class="collapsed-toolbar-copy">
+                    <h2 class="collapsed-title">Workflow Builder</h2>
+                    <p class="collapsed-sub">Build pipelines visually and inspect each security stage.</p>
+                </div>
+                <div class="collapsed-toolbar-actions">
+                    <button class="theme-btn" data-theme-toggle aria-label="Toggle theme" title="Theme">
+                        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    </button>
+                    <a class="btn-ghost" href="{{ url_for('settings') }}">Settings</a>
+                </div>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="flash-group">
+                    {% for category, message in messages %}
+                    <div class="flash flash-{{ category }}">
+                        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 11a.75.75 0 1 1 0-1.5A.75.75 0 0 1 8 12zm.75-3.5a.75.75 0 0 1-1.5 0v-3a.75.75 0 0 1 1.5 0v3z"/></svg>
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            {% endwith %}
+
+            {% if not result %}
+            <!-- EMPTY STATE -->
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <svg viewBox="0 0 48 48" fill="none"><path d="M24 6L40 14V24C40 32.8 33 40 24 42C15 40 8 32.8 8 24V14L24 6Z" stroke="currentColor" stroke-width="1.5" opacity="0.4"/><path d="M18 24l4.5 4.5L30 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/></svg>
+                </div>
+                <h2 class="empty-title">Pipeline Ready</h2>
+                <p class="empty-sub">Submit an image to run the full 9-stage security pipeline and see a detailed breakdown of every decision.</p>
+                <div class="empty-stages">
+                    {% for label in ["Auth", "Rate Limit", "Validation", "Preprocessing", "Integrity", "Inference", "Anomaly", "Adversarial", "Decision"] %}
+                    <span class="empty-stage-pill">{{ label }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {% else %}
+            <!-- PIPELINE HEADER -->
+            <div class="pipeline-hd">
+                <div class="pipeline-hd-left">
+                    <p class="eyebrow">Pipeline Execution</p>
+                    <h2 class="pipeline-status">{{ result.status|replace('_', ' ')|title }}</h2>
+                    <p class="pipeline-ts mono">{{ result.timestamp }}</p>
+                </div>
+                <div class="risk-badge risk-{{ result.risk_level|lower }}">
+                    <span class="risk-dot"></span>
+                    {{ result.risk_level }}
+                </div>
+            </div>
+
+            <!-- PIPELINE STEPS -->
+            <div class="steps-track">
+                {% for step in result.pipeline_steps %}
+                <div class="step" data-status="{{ step.status }}">
+
+                    <div class="step-spine">
+                        <div class="step-node node-{{ step.status }}">
+                            {% if step.status == 'pass' %}
+                            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 6l3 3 5-5"/></svg>
+                            {% elif step.status == 'warn' %}
+                            <svg viewBox="0 0 12 12" fill="currentColor"><path d="M6 2L11 10H1L6 2Z" stroke="currentColor" stroke-width="1" fill="none"/><circle cx="6" cy="8.5" r=".6" fill="currentColor"/><path d="M6 5v2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+                            {% elif step.status == 'fail' %}
+                            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l6 6M9 3l-6 6"/></svg>
+                            {% else %}
+                            <span class="node-num mono">{{ step.number }}</span>
+                            {% endif %}
+                        </div>
+                        {% if not loop.last %}
+                        <div class="step-line line-{{ step.status }}"></div>
+                        {% endif %}
+                    </div>
+
+                    <div class="step-card step-card-collapsible card-{{ step.status }} {% if step.status == 'pending' %}card-pending{% endif %}">
+                        <button class="step-toggle" type="button" aria-expanded="false" aria-label="Toggle {{ step.title }} details">
+                            <div class="step-card-head">
+                                <div class="step-meta">
+                                    <span class="step-kicker">{{ step.label }}</span>
+                                    <span class="step-title">{{ step.title }}</span>
+                                </div>
+                                <div class="step-right">
+                                    <span class="step-badge badge-{{ step.status }}">{{ step.badge }}</span>
+                                    <span class="step-chevron" aria-hidden="true">
+                                        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6l5 5 5-5"/></svg>
+                                    </span>
+                                </div>
+                            </div>
+                        </button>
+
+                        <div class="step-content" hidden>
+                            <p class="step-body">{{ step.body }}</p>
+
+                            {% if step.details %}
+                            <div class="step-details">
+                                {% for d in step.details %}
+                                <div class="detail-cell">
+                                    <span class="detail-key">{{ d.label }}</span>
+                                    <span class="detail-val mono">{{ d.value }}</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+
+                            {% if step.top5 %}
+                            <div class="top5">
+                                <p class="top5-label-head">Top predictions</p>
+                                {% for item in step.top5 %}
+                                <div class="top5-row {% if loop.first %}top5-first{% endif %}">
+                                    <span class="top5-name">{{ item.label }}</span>
+                                    <div class="top5-bar-wrap">
+                                        <div class="top5-bar-fill" style="width:{{ '%.1f'|format(item.confidence*100) }}%"></div>
+                                    </div>
+                                    <span class="top5-pct mono">{{ '%.1f'|format(item.confidence*100) }}%</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- VERDICT CARD -->
+            <div class="verdict-card verdict-{{ result.verdict_style }}">
+                <div class="verdict-head">
+                    <div>
+                        <p class="eyebrow">Final Decision</p>
+                        <h3 class="verdict-title">{{ result.decision_reason }}</h3>
+                    </div>
+                    <div class="risk-badge risk-{{ result.risk_level|lower }}">
+                        <span class="risk-dot"></span>
+                        {{ result.risk_level }}
+                    </div>
+                </div>
+                <div class="verdict-grid">
+                    <div class="vd-cell">
+                        <span class="detail-key">System Status</span>
+                        <span class="detail-val mono">{{ result.status|replace('_', ' ')|title }}</span>
+                    </div>
+                    <div class="vd-cell">
+                        <span class="detail-key">ML Verdict</span>
+                        <span class="detail-val mono">{{ result.get('verdict','N/A')|title }}</span>
+                    </div>
+                    <div class="vd-cell">
+                        <span class="detail-key">Prediction</span>
+                        <span class="detail-val mono">{{ result.get('prediction') or '—' }}</span>
+                    </div>
+                    <div class="vd-cell">
+                        <span class="detail-key">Confidence</span>
+                        <span class="detail-val mono">
+                            {% if result.get('confidence') is not none %}{{ '%.2f'|format(result.get('confidence')*100) }}%{% else %}—{% endif %}
+                        </span>
+                    </div>
+                    <div class="vd-cell">
+                        <span class="detail-key">Anomaly Flag</span>
+                        <span class="detail-val mono {% if result.get('anomaly') %}text-warn{% endif %}">{{ 'Yes' if result.get('anomaly') else 'No' }}</span>
+                    </div>
+                    <div class="vd-cell">
+                        <span class="detail-key">Adversarial Flag</span>
+                        <span class="detail-val mono {% if result.get('adversarial') %}text-fail{% endif %}">{{ 'Yes' if result.get('adversarial') else 'No' }}</span>
+                    </div>
+                    {% if result.get('issues') %}
+                    <div class="vd-cell vd-cell-wide">
+                        <span class="detail-key">Observations</span>
+                        <span class="detail-val">{{ result.get('issues')|join('; ') }}</span>
+                    </div>
+                    {% endif %}
+                    {% if result.get('risk_breakdown') %}
+                    <div class="vd-cell">
+                        <span class="detail-key">Input Risk</span>
+                        <span class="detail-val mono">{{ '%.3f'|format(result.risk_breakdown.get('input_risk', 0)) }}</span>
+                    </div>
+                    <div class="vd-cell">
+                        <span class="detail-key">Traffic Risk</span>
+                        <span class="detail-val mono">{{ '%.3f'|format(result.risk_breakdown.get('traffic_risk', 0)) }}</span>
+                    </div>
+                    <div class="vd-cell">
+                        <span class="detail-key">Access Risk</span>
+                        <span class="detail-val mono">{{ '%.3f'|format(result.risk_breakdown.get('access_risk', 0)) }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% endif %}{# end if result #}
+        </main>
+    </div>{# end .layout #}
+</div>{# end .app #}
+{% endif %}{# end auth #}
+
+<script>
+// ── Theme toggle ──────────────────────────────────────────────────────────────
+(function () {
+    const html = document.documentElement;
+    const saved = localStorage.getItem('sml-theme');
+    if (saved) html.setAttribute('data-theme', saved);
+
+    document.querySelectorAll('[data-theme-toggle]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const current = html.getAttribute('data-theme') || 'light';
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('sml-theme', next);
+        });
+    });
+})();
+
+// ── File input: show selected filename ───────────────────────────────────────
+const fileInput = document.getElementById('fileInput');
+const filePreviewName = document.getElementById('filePreviewName');
+if (fileInput && filePreviewName) {
+    fileInput.addEventListener('change', () => {
+        const name = fileInput.files[0]?.name;
+        filePreviewName.textContent = name ? `Selected: ${name}` : '';
+        if (name) {
+            // Deselect any chosen sample
+            document.querySelectorAll('input[name="sample_image"]').forEach(r => r.checked = false);
+        }
+    });
+}
+
+// ── Sample selection: clear file input ───────────────────────────────────────
+document.querySelectorAll('input[name="sample_image"]').forEach(r => {
+    r.addEventListener('change', () => {
+        if (fileInput) fileInput.value = '';
+        if (filePreviewName) filePreviewName.textContent = '';
+    });
+});
+
+// ── Collapsible left panel ─────────────────────────────────────────────────
+(function () {
+    const layout = document.querySelector('.layout');
+    const panelButton = document.getElementById('toggleInputPanel');
+    const openButton = document.getElementById('openInputPanel');
+    if (!layout) return;
+
+    const storageKey = 'sml-input-panel-collapsed';
+
+    const setPanelState = (collapsed) => {
+        layout.classList.toggle('input-collapsed', collapsed);
+        if (panelButton) {
+            panelButton.setAttribute('aria-expanded', String(!collapsed));
+            panelButton.setAttribute('aria-label', collapsed ? 'Expand input panel' : 'Collapse input panel');
+            panelButton.title = collapsed ? 'Expand panel' : 'Collapse panel';
+        }
+        if (openButton) {
+            openButton.setAttribute('aria-expanded', String(!collapsed));
+        }
+    };
+
+    const savedCollapsed = localStorage.getItem(storageKey) === '1';
+    setPanelState(savedCollapsed);
+
+    if (panelButton) {
+        panelButton.addEventListener('click', () => {
+            const collapsed = !layout.classList.contains('input-collapsed');
+            setPanelState(collapsed);
+            localStorage.setItem(storageKey, collapsed ? '1' : '0');
+        });
+    }
+
+    if (openButton) {
+        openButton.addEventListener('click', () => {
+            setPanelState(false);
+            localStorage.setItem(storageKey, '0');
+        });
+    }
+})();
+
+// ── Collapsible pipeline checks ────────────────────────────────────────────
+document.querySelectorAll('.step-card-collapsible').forEach(card => {
+    const toggle = card.querySelector('.step-toggle');
+    const content = card.querySelector('.step-content');
+    if (!toggle || !content) return;
+
+    const setExpanded = (expanded) => {
+        toggle.setAttribute('aria-expanded', String(expanded));
+        card.classList.toggle('is-expanded', expanded);
+        content.hidden = !expanded;
+    };
+
+    setExpanded(false);
+
+    toggle.addEventListener('click', () => {
+        const expanded = toggle.getAttribute('aria-expanded') === 'true';
+        setExpanded(!expanded);
+    });
+});
+</script>
 </body>
 </html>

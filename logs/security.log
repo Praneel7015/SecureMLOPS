@@ -150,3 +150,206 @@ Starting secure ML web interface
 127.0.0.1 - - [07/Apr/2026 20:02:44] "[36mGET /sample-images/noise.jpg HTTP/1.1[0m" 304 -
 127.0.0.1 - - [07/Apr/2026 20:02:44] "[36mGET /sample-images/noisycat.jpg HTTP/1.1[0m" 304 -
 127.0.0.1 - - [07/Apr/2026 20:02:44] "[36mGET /sample-images/noisydog.jpg HTTP/1.1[0m" 304 -
+Starting secure ML web interface
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[33mPress CTRL+C to quit[0m
+ * Restarting with stat
+Starting secure ML web interface
+ * Debugger is active!
+ * Debugger PIN: 134-940-196
+127.0.0.1 - - [07/Apr/2026 21:17:17] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 21:17:17] "GET /static/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 21:17:17] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+127.0.0.1 - - [07/Apr/2026 21:17:29] "[32mPOST /login HTTP/1.1[0m" 302 -
+127.0.0.1 - - [07/Apr/2026 21:17:29] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 21:17:29] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:17:29] "[36mGET /sample-images/cat.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:17:29] "[36mGET /sample-images/dog_goldenRetriever.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:17:29] "[36mGET /sample-images/goofytails.jpeg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:17:29] "[36mGET /sample-images/guarddog.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:17:29] "[36mGET /sample-images/noise.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:17:29] "[36mGET /sample-images/noisycat.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:17:29] "[36mGET /sample-images/noisydog.jpg HTTP/1.1[0m" 304 -
+{"user": "person1", "status": "allowed_with_warning", "risk_level": 0.72, "decision_reason": "Risk score: 0.72", "prediction": "tabby", "timestamp": "2026-04-07 21:17:48 India Standard Time", "filename": "20260407211749_cat4.jfif.jpeg"}
+127.0.0.1 - - [07/Apr/2026 21:17:50] "POST /analyze HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 21:17:50] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:17:50] "GET /uploads/20260407211749_cat4.jfif.jpeg HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 21:17:50] "[36mGET /sample-images/cat.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:17:50] "[36mGET /sample-images/dog_goldenRetriever.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:17:50] "[36mGET /sample-images/goofytails.jpeg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:17:50] "[36mGET /sample-images/guarddog.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:17:50] "[36mGET /sample-images/noise.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:17:50] "[36mGET /sample-images/noisycat.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:17:50] "[36mGET /sample-images/noisydog.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:18:19] "[35m[1mPOST /analyze HTTP/1.1[0m" 500 -
+127.0.0.1 - - [07/Apr/2026 21:18:19] "GET /analyze?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 21:18:19] "[36mGET /analyze?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:18:19] "GET /analyze?__debugger__=yes&cmd=resource&f=console.png&s=VAYgaGxBV2DrUOOO8yTu HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 21:18:19] "GET /analyze?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 21:18:40] "[35m[1mPOST /analyze HTTP/1.1[0m" 500 -
+127.0.0.1 - - [07/Apr/2026 21:18:41] "[36mGET /analyze?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:18:41] "[36mGET /analyze?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:18:41] "[36mGET /analyze?__debugger__=yes&cmd=resource&f=console.png&s=VAYgaGxBV2DrUOOO8yTu HTTP/1.1[0m" 304 -
+Starting secure ML web interface
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[33mPress CTRL+C to quit[0m
+ * Restarting with stat
+Starting secure ML web interface
+ * Debugger is active!
+ * Debugger PIN: 134-940-196
+127.0.0.1 - - [07/Apr/2026 21:19:04] "[35m[1mPOST /analyze HTTP/1.1[0m" 500 -
+127.0.0.1 - - [07/Apr/2026 21:19:05] "[36mGET /analyze?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:19:05] "[36mGET /analyze?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:19:05] "GET /analyze?__debugger__=yes&cmd=resource&f=console.png&s=jK3yZxorUcNFmVDJf1Rl HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 21:19:18] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 21:19:18] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:19:18] "[36mGET /sample-images/cat.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:19:18] "[36mGET /sample-images/dog_goldenRetriever.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:19:18] "[36mGET /sample-images/goofytails.jpeg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:19:18] "[36mGET /sample-images/noise.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:19:18] "[36mGET /sample-images/guarddog.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:19:19] "[36mGET /sample-images/noisycat.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:19:19] "[36mGET /sample-images/noisydog.jpg HTTP/1.1[0m" 304 -
+{"user": "person1", "status": "allowed_with_warning", "risk_level": 0.714, "decision_reason": "Risk score: 0.714", "prediction": "tabby", "timestamp": "2026-04-07 21:19:28 India Standard Time", "filename": "20260407211929_cat4.jpg.jpeg"}
+127.0.0.1 - - [07/Apr/2026 21:19:30] "POST /analyze HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 21:19:30] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:19:30] "GET /uploads/20260407211929_cat4.jpg.jpeg HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 21:19:30] "[36mGET /sample-images/cat.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:19:30] "[36mGET /sample-images/dog_goldenRetriever.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:19:30] "[36mGET /sample-images/goofytails.jpeg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:19:30] "[36mGET /sample-images/guarddog.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:19:30] "[36mGET /sample-images/noise.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:19:30] "[36mGET /sample-images/noisycat.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:19:30] "[36mGET /sample-images/noisydog.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:20:49] "[35m[1mPOST /analyze HTTP/1.1[0m" 500 -
+127.0.0.1 - - [07/Apr/2026 21:20:49] "[36mGET /analyze?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:20:49] "[36mGET /analyze?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:20:49] "[36mGET /analyze?__debugger__=yes&cmd=resource&f=console.png&s=jK3yZxorUcNFmVDJf1Rl HTTP/1.1[0m" 304 -
+{"user": "person1", "status": "allowed", "risk_level": 0.093, "decision_reason": "Risk score: 0.093", "prediction": "Persian cat", "timestamp": "2026-04-07 21:21:23 India Standard Time", "filename": "20260407212124_cat3.jpg.jpeg"}
+127.0.0.1 - - [07/Apr/2026 21:21:25] "POST /analyze HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 21:21:25] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:21:25] "GET /uploads/20260407212124_cat3.jpg.jpeg HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 21:21:25] "[36mGET /sample-images/cat.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:21:25] "[36mGET /sample-images/dog_goldenRetriever.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:21:25] "[36mGET /sample-images/goofytails.jpeg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:21:25] "[36mGET /sample-images/guarddog.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:21:25] "[36mGET /sample-images/noise.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:21:25] "[36mGET /sample-images/noisycat.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:21:25] "[36mGET /sample-images/noisydog.jpg HTTP/1.1[0m" 304 -
+{"user": "person1", "status": "allowed_with_warning", "risk_level": 0.714, "decision_reason": "Risk score: 0.714", "prediction": "tabby", "timestamp": "2026-04-07 21:21:50 India Standard Time", "filename": "20260407212151_cat4.jpg.jpeg"}
+127.0.0.1 - - [07/Apr/2026 21:21:52] "POST /analyze HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 21:21:52] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:21:52] "GET /uploads/20260407212151_cat4.jpg.jpeg HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 21:21:52] "[36mGET /sample-images/cat.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:21:52] "[36mGET /sample-images/dog_goldenRetriever.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:21:52] "[36mGET /sample-images/goofytails.jpeg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:21:52] "[36mGET /sample-images/guarddog.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:21:52] "[36mGET /sample-images/noise.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:21:52] "[36mGET /sample-images/noisycat.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:21:52] "[36mGET /sample-images/noisydog.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:22:07] "[35m[1mPOST /analyze HTTP/1.1[0m" 500 -
+127.0.0.1 - - [07/Apr/2026 21:22:07] "[36mGET /analyze?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:22:07] "[36mGET /analyze?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:22:07] "[36mGET /analyze?__debugger__=yes&cmd=resource&f=console.png&s=jK3yZxorUcNFmVDJf1Rl HTTP/1.1[0m" 304 -
+{"user": "person1", "status": "allowed_with_warning", "risk_level": 0.714, "decision_reason": "Risk score: 0.714", "prediction": "tabby", "timestamp": "2026-04-07 21:22:15 India Standard Time", "filename": "20260407212216_cat4.jpg.jpeg"}
+127.0.0.1 - - [07/Apr/2026 21:22:16] "POST /analyze HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 21:22:16] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:22:16] "GET /uploads/20260407212216_cat4.jpg.jpeg HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 21:22:17] "[36mGET /sample-images/cat.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:22:17] "[36mGET /sample-images/dog_goldenRetriever.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:22:17] "[36mGET /sample-images/guarddog.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:22:17] "[36mGET /sample-images/goofytails.jpeg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:22:17] "[36mGET /sample-images/noise.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:22:17] "[36mGET /sample-images/noisycat.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:22:17] "[36mGET /sample-images/noisydog.jpg HTTP/1.1[0m" 304 -
+{"user": "person1", "status": "blocked", "risk_level": 1.0, "decision_reason": "Risk score: 1.0", "prediction": null, "timestamp": "2026-04-07 21:22:58 India Standard Time", "filename": "20260407212300_cat.jpg.jpeg"}
+127.0.0.1 - - [07/Apr/2026 21:23:00] "POST /analyze HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 21:23:00] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:23:00] "GET /uploads/20260407212300_cat.jpg.jpeg HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 21:23:01] "[36mGET /sample-images/cat.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:23:01] "[36mGET /sample-images/dog_goldenRetriever.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:23:01] "[36mGET /sample-images/goofytails.jpeg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:23:01] "[36mGET /sample-images/guarddog.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:23:01] "[36mGET /sample-images/noise.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:23:01] "[36mGET /sample-images/noisycat.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:23:01] "[36mGET /sample-images/noisydog.jpg HTTP/1.1[0m" 304 -
+{"user": "person1", "status": "allowed", "risk_level": 0.057, "decision_reason": "Risk score: 0.057", "prediction": "Persian cat", "timestamp": "2026-04-07 21:23:33 India Standard Time", "filename": "20260407212335_cat2.jpg.jpeg"}
+127.0.0.1 - - [07/Apr/2026 21:23:35] "POST /analyze HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 21:23:36] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:23:36] "GET /uploads/20260407212335_cat2.jpg.jpeg HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 21:23:36] "[36mGET /sample-images/cat.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:23:36] "[36mGET /sample-images/dog_goldenRetriever.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:23:36] "[36mGET /sample-images/goofytails.jpeg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:23:36] "[36mGET /sample-images/guarddog.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:23:36] "[36mGET /sample-images/noise.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:23:36] "[36mGET /sample-images/noisycat.jpg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 21:23:36] "[36mGET /sample-images/noisydog.jpg HTTP/1.1[0m" 304 -
+ * Detected change in 'C:\\Mydocs\\PRANEEL\\Projects\\SecureMLOPS\\app.py', reloading
+ * Restarting with stat
+ * Restarting with stat
+ * Restarting with stat
+ * Restarting with stat
+INFERENCE user=person1 file=20260407213115_cat5.jpg.jpeg
+DECISION user=person1 verdict=reliable risk=0.133 action=ALLOW label=Persian cat conf=0.59
+{"user": "person1", "status": "allowed", "risk_level": "LOW", "decision_reason": "Risk score: 0.133", "prediction": "Persian cat", "timestamp": "2026-04-07 21:31:14 India Standard Time", "filename": "20260407213115_cat5.jpg.jpeg"}
+LOGIN  user=person1 ip=127.0.0.1
+INFERENCE user=person1 file=20260407213849_Screenshot_2025-12-06_220512.png
+DECISION user=person1 verdict=reliable risk=0.138 action=ALLOW label=wig conf=0.51
+{"user": "person1", "status": "allowed", "risk_level": "LOW", "decision_reason": "Risk score: 0.138", "prediction": "wig", "timestamp": "2026-04-07 21:38:48 India Standard Time", "filename": "20260407213849_Screenshot_2025-12-06_220512.png"}
+VALIDATE_FAIL user=person1 reason=Please upload an image or choose one from the sample gallery.
+{"user": "person1", "status": "blocked", "risk_level": "CRITICAL", "decision_reason": "Please upload an image or choose one from the sample gallery.", "prediction": null, "timestamp": "2026-04-07 21:41:10 India Standard Time", "filename": null}
+VALIDATE_FAIL user=person1 reason=Please upload an image or choose one from the sample gallery.
+{"user": "person1", "status": "blocked", "risk_level": "CRITICAL", "decision_reason": "Please upload an image or choose one from the sample gallery.", "prediction": null, "timestamp": "2026-04-07 21:46:25 India Standard Time", "filename": null}
+INFERENCE user=person1 file=20260407222105_OIP.jpg
+DECISION user=person1 verdict=reliable risk=0.059 action=ALLOW label=sports car conf=0.91
+{"user": "person1", "status": "allowed", "risk_level": "LOW", "decision_reason": "Risk score: 0.059", "prediction": "sports car", "timestamp": "2026-04-07 22:21:04 India Standard Time", "filename": "20260407222105_OIP.jpg"}
+INFERENCE user=person1 file=20260407222439_doogi.jpg
+DECISION user=person1 verdict=reliable risk=0.125 action=ALLOW label=cocker spaniel conf=0.49
+{"user": "person1", "status": "allowed", "risk_level": "LOW", "decision_reason": "Risk score: 0.125", "prediction": "cocker spaniel", "timestamp": "2026-04-07 22:24:36 India Standard Time", "filename": "20260407222439_doogi.jpg"}
+INFERENCE user=person1 file=20260407222728_deepfried_1775581031977.jpg
+DECISION user=person1 verdict=reliable risk=0.054 action=ALLOW label=cocker spaniel conf=0.51
+{"user": "person1", "status": "allowed", "risk_level": "LOW", "decision_reason": "Risk score: 0.054", "prediction": "cocker spaniel", "timestamp": "2026-04-07 22:27:25 India Standard Time", "filename": "20260407222728_deepfried_1775581031977.jpg"}
+VALIDATE_FAIL user=person1 reason=Please upload an image or choose one from the sample gallery.
+{"user": "person1", "status": "blocked", "risk_level": "CRITICAL", "decision_reason": "Please upload an image or choose one from the sample gallery.", "prediction": null, "timestamp": "2026-04-07 22:28:04 India Standard Time", "filename": null}
+INFERENCE user=person1 file=20260407222814_deepfried_1775581031977.jpg
+DECISION user=person1 verdict=suspicious risk=0.055 action=ALLOW label=Irish setter conf=0.59
+{"user": "person1", "status": "allowed", "risk_level": "LOW", "decision_reason": "Risk score: 0.055", "prediction": "Irish setter", "timestamp": "2026-04-07 22:28:12 India Standard Time", "filename": "20260407222814_deepfried_1775581031977.jpg"}
+INFERENCE user=person1 file=20260407222839_noise.jpg
+DECISION user=person1 verdict=uncertain risk=0.48 action=MONITOR label=kite conf=0.06
+{"user": "person1", "status": "allowed_with_warning", "risk_level": "MEDIUM", "decision_reason": "Risk score: 0.480", "prediction": "kite", "timestamp": "2026-04-07 22:28:37 India Standard Time", "filename": "20260407222839_noise.jpg"}
+INFERENCE user=person1 file=20260407223458_OIP.jpg
+DECISION user=person1 verdict=reliable risk=0.059 action=ALLOW label=sports car conf=0.91
+{"user": "person1", "status": "allowed", "risk_level": "LOW", "decision_reason": "Risk score: 0.059", "prediction": "sports car", "timestamp": "2026-04-07 22:34:56 India Standard Time", "filename": "20260407223458_OIP.jpg"}
+INFERENCE user=person1 file=20260407223512_deepfried_1775581031977.jpg
+DECISION user=person1 verdict=suspicious risk=0.055 action=ALLOW label=Irish setter conf=0.59
+{"user": "person1", "status": "allowed", "risk_level": "LOW", "decision_reason": "Risk score: 0.055", "prediction": "Irish setter", "timestamp": "2026-04-07 22:35:11 India Standard Time", "filename": "20260407223512_deepfried_1775581031977.jpg"}
+INFERENCE user=person1 file=20260407223548_cat.jpg.jpeg
+DECISION user=person1 verdict=uncertain risk=0.433 action=MONITOR label=Persian cat conf=0.17
+{"user": "person1", "status": "allowed_with_warning", "risk_level": "MEDIUM", "decision_reason": "Risk score: 0.433", "prediction": "Persian cat", "timestamp": "2026-04-07 22:35:46 India Standard Time", "filename": "20260407223548_cat.jpg.jpeg"}
+INFERENCE user=person1 file=20260407223642_deepfried_1775581031977.jpg
+DECISION user=person1 verdict=suspicious risk=0.055 action=ALLOW label=Irish setter conf=0.59
+{"user": "person1", "status": "allowed", "risk_level": "LOW", "decision_reason": "Risk score: 0.055", "prediction": "Irish setter", "timestamp": "2026-04-07 22:36:39 India Standard Time", "filename": "20260407223642_deepfried_1775581031977.jpg"}
+INFERENCE user=person1 file=20260407223818_deepfried_1775581031977.jpg
+DECISION user=person1 verdict=suspicious risk=0.055 action=ALLOW label=Irish setter conf=0.59
+{"user": "person1", "status": "allowed", "risk_level": "LOW", "decision_reason": "Risk score: 0.055", "prediction": "Irish setter", "timestamp": "2026-04-07 22:38:16 India Standard Time", "filename": "20260407223818_deepfried_1775581031977.jpg"}
+INFERENCE user=person1 file=20260407224038_dog_goldenRetriever.jpg
+DECISION user=person1 verdict=reliable risk=0.111 action=ALLOW label=golden retriever conf=0.83
+{"user": "person1", "status": "allowed", "risk_level": "LOW", "decision_reason": "Risk score: 0.111", "prediction": "golden retriever", "timestamp": "2026-04-07 22:40:36 India Standard Time", "filename": "20260407224038_dog_goldenRetriever.jpg"}
+INFERENCE user=person1 file=20260407224143_dog_goldenRetriever.jpg
+DECISION user=person1 verdict=reliable risk=0.111 action=ALLOW label=golden retriever conf=0.83
+{"user": "person1", "status": "allowed", "risk_level": "LOW", "decision_reason": "Risk score: 0.111", "prediction": "golden retriever", "timestamp": "2026-04-07 22:41:41 India Standard Time", "filename": "20260407224143_dog_goldenRetriever.jpg"}
+INFERENCE user=person1 file=20260407224151_dog_goldenRetriever.jpg
+DECISION user=person1 verdict=reliable risk=0.111 action=ALLOW label=golden retriever conf=0.83
+{"user": "person1", "status": "allowed", "risk_level": "LOW", "decision_reason": "Risk score: 0.111", "prediction": "golden retriever", "timestamp": "2026-04-07 22:41:49 India Standard Time", "filename": "20260407224151_dog_goldenRetriever.jpg"}
+INFERENCE user=person1 file=20260407224157_dog_goldenRetriever.jpg
+DECISION user=person1 verdict=reliable risk=0.111 action=ALLOW label=golden retriever conf=0.83
+{"user": "person1", "status": "allowed", "risk_level": "LOW", "decision_reason": "Risk score: 0.111", "prediction": "golden retriever", "timestamp": "2026-04-07 22:41:56 India Standard Time", "filename": "20260407224157_dog_goldenRetriever.jpg"}
+INFERENCE user=person1 file=20260407224208_cat5.jpg.jpeg
+DECISION user=person1 verdict=reliable risk=0.133 action=ALLOW label=Persian cat conf=0.59
+{"user": "person1", "status": "allowed", "risk_level": "LOW", "decision_reason": "Risk score: 0.133", "prediction": "Persian cat", "timestamp": "2026-04-07 22:42:06 India Standard Time", "filename": "20260407224208_cat5.jpg.jpeg"}
+VALIDATE_FAIL user=person1 reason=Please upload an image or choose one from the sample gallery.
+{"user": "person1", "status": "blocked", "risk_level": "CRITICAL", "decision_reason": "Please upload an image or choose one from the sample gallery.", "prediction": null, "timestamp": "2026-04-07 22:42:21 India Standard Time", "filename": null}
+LOGOUT user=person1 ip=127.0.0.1
+LOGIN  user=person1 ip=127.0.0.1

@@ -1,7 +1,19 @@
 import torch
 
+# ---------------------------------------------------------------------------
+# FIX: Original thresholds were too aggressive.
+#   low_confidence   was < 0.55  →  now < 0.45
+#   very_uncertain   was > 0.72  →  now > 0.78
+#   ambiguous margin was < 0.20  →  now < 0.15
+#
+# At 0.55, a model predicting at 54% confidence was "low" — but that's actually
+# fairly reasonable for a diverse ImageNet class. These new values only flag
+# images that are genuinely uncertain, not just moderately confident.
+# ---------------------------------------------------------------------------
+
 def calculate_entropy(probs):
     return -torch.sum(probs * torch.log(probs + 1e-10))
+
 
 def evaluate_anomaly(probs):
     probs = probs.squeeze(0)
@@ -13,9 +25,9 @@ def evaluate_anomaly(probs):
     entropy = calculate_entropy(probs).item()
     normalized_entropy = entropy / torch.log(torch.tensor(float(probs.numel()))).item()
 
-    low_confidence = top1 < 0.55
-    very_uncertain = normalized_entropy > 0.72
-    ambiguous = margin < 0.20
+    low_confidence = top1 < 0.45         # was 0.55
+    very_uncertain = normalized_entropy > 0.78  # was 0.72
+    ambiguous = margin < 0.15            # was 0.20
 
     score = 0
     if low_confidence:
@@ -43,6 +55,7 @@ def evaluate_anomaly(probs):
             if active
         ],
     }
+
 
 def is_anomalous(probs, confidence=None):
     return evaluate_anomaly(probs)["flag"]

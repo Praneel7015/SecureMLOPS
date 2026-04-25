@@ -13,7 +13,6 @@ from auth.auth_service import authenticate_user
 from decision.engine import decide_risk
 from integrity.checker import verify_integrity
 from rate_limit.service import RateLimiter
-from utils.logging_setup import configure_logging, log_security_event
 from validation.image_validator import validate_image_path, validate_image_upload
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -26,7 +25,6 @@ app.config["SECRET_KEY"] = os.environ.get("APP_SECRET_KEY", "mini-project-secret
 app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
 app.config["UPLOAD_FOLDER"] = str(UPLOAD_DIR)
 
-configure_logging(BASE_DIR / "logs" / "security.log")
 rate_limiter = RateLimiter()
 
 # ── Terminal colour helpers ───────────────────────────────────────────────────
@@ -66,7 +64,6 @@ def _startup_banner(host: str, port: int) -> None:
     print(f"{_CYAN}{_BOLD}└───────────────────────────────────────────┘{_R}")
     print(f"  {_GREEN}●{_R} Running on {_BOLD}http://{host}:{port}{_R}")
     print(f"  {_DIM}Model:  EfficientNet-B0 (ImageNet pretrained){_R}")
-    print(f"  {_DIM}Logs:   logs/security.log{_R}")
     print(f"  {_DIM}Press Ctrl+C to stop{_R}\n")
     print(f"  {_DIM}{'TIME':8}  {'METHOD':6}  {'STATUS':6}  {'PATH':<42}  DURATION{_R}")
     print(f"  {_DIM}{'─'*80}{_R}")
@@ -173,7 +170,6 @@ def analyze():
             integrity={"ok": True, "message": "Integrity verified."},
         )
         _finalise(result)
-        log_security_event(username, result)
         flash(rate_state["message"], "error")
         return render_template(
             "index.html",
@@ -212,7 +208,6 @@ def analyze():
             integrity={"ok": True, "message": "Integrity verified."},
         )
         _finalise(result)
-        log_security_event(username, result)
         flash(validation_message, "error")
         return render_template(
             "index.html",
@@ -236,7 +231,6 @@ def analyze():
             integrity=integrity,
         )
         _finalise(result)
-        log_security_event(username, result)
         flash(integrity["message"], "error")
         return render_template(
             "index.html",
@@ -294,7 +288,6 @@ def analyze():
         detection=detection,
     )
     _finalise(result)
-    log_security_event(username, result)
 
     return render_template(
         "index.html",

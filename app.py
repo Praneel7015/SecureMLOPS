@@ -160,7 +160,12 @@ def analyze():
     sample_images = list_sample_images()
 
     # ── Rate limiting ─────────────────────────────────────────────────────────
-    rate_state = rate_limiter.check(username, request.remote_addr or "local")
+    pipeline_mode = request.form.get("pipeline_mode", "inference")
+    rate_state = rate_limiter.check(
+        username,
+        request.remote_addr or "local",
+        mode=pipeline_mode,
+    )
     if not rate_state["allowed"]:
         _terminal_logger.warning("RATE_LIMIT user=%s", username)
         decision = decide_risk(rate_limited=True)

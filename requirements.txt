@@ -1,0 +1,6 @@
+flask
+torch
+torchvision
+werkzeug
+pillow
+supabase>=2.0.0

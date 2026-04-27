@@ -1,0 +1,10 @@
+{
+  "person1": {
+    "password_hash": "scrypt:32768:8:1$g9wmHXrJQlwrvkT8$348c25f1d1b61af10ada7bd29ec57f596acd54aa6d1fcd36b15fda7490eb1401b496913863eb895952354fbc464ac2f2d9e05c61fa3d0dda57b19c3ba47722bd",
+    "role": "system-security"
+  },
+  "person2": {
+    "password_hash": "scrypt:32768:8:1$g9wmHXrJQlwrvkT8$348c25f1d1b61af10ada7bd29ec57f596acd54aa6d1fcd36b15fda7490eb1401b496913863eb895952354fbc464ac2f2d9e05c61fa3d0dda57b19c3ba47722bd",
+    "role": "ml-detection"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "files": {
+    "Detection/model_loader.py": "db8f17d1290215e8b5c59ea5ed9e57465ead211ddaa0bc40aa51a89e3054ebc7",
+    "Detection/predictor.py": "336c98ac27466dfb34f2fc0b037b60b5948c38c6c4e94208ea4a8f42b213c41b"
+  },
+  "model_weights": {
+    "architecture": "efficientnet_b0",
+    "source": "EfficientNet_B0_Weights.DEFAULT",
+    "fingerprint": "2948ab73316bd69f555154c18e9556fbe3520e284b9240eb1d33508e546f629c",
+    "method": "sha256(state_dict)"
+  }
+}

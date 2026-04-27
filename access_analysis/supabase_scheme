@@ -1,0 +1,48 @@
+-- ============================================================
+-- Supabase schema for the Access Analysis module
+-- Run this once in the Supabase SQL Editor
+-- ============================================================
+
+-- security_logs: append-only audit log
+-- Rows are NEVER updated. Every request produces exactly one row.
+CREATE TABLE IF NOT EXISTS security_logs (
+    id              BIGSERIAL    PRIMARY KEY,
+    user_id         TEXT         NOT NULL,
+    timestamp       TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    access_risk     FLOAT        NOT NULL,   -- session-level behavioural risk
+    final_risk      FLOAT        NOT NULL,   -- baseline-adjusted final risk
+    decision        TEXT         NOT NULL,   -- ALLOW | MONITOR | BLOCK
+    reason          TEXT         NOT NULL,   -- human-readable explanation
+    request_type    TEXT         NOT NULL DEFAULT 'inference',
+    response_status TEXT         NOT NULL,
+    input_hash      TEXT         NOT NULL    -- SHA-256 of input identifier
+);
+
+-- Index speeds up per-user history queries
+CREATE INDEX IF NOT EXISTS idx_security_logs_user_id
+    ON security_logs (user_id);
+
+-- Optional: restrict inserts only (enforce append-only at DB level)
+-- ALTER TABLE security_logs ENABLE ROW LEVEL SECURITY;
+-- CREATE POLICY "insert_only" ON security_logs
+--     FOR INSERT TO anon WITH CHECK (true);
+
+-- ── Useful query examples ─────────────────────────────────────────────────────
+
+-- Historical average per user (used by baseline engine):
+-- SELECT AVG(access_risk) FROM security_logs WHERE user_id = 'alice';
+
+-- Recent logs for session reconstruction:
+-- SELECT timestamp, input_hash FROM security_logs
+--   WHERE user_id = 'alice'
+--   ORDER BY timestamp DESC LIMIT 20;
+
+-- Decision distribution for a user:
+-- SELECT decision, COUNT(*) FROM security_logs
+--   WHERE user_id = 'alice'
+--   GROUP BY decision;
+
+-- Users with BLOCK events in the last 24 hours:
+-- SELECT DISTINCT user_id FROM security_logs
+--   WHERE decision = 'BLOCK'
+--     AND timestamp >= NOW() - INTERVAL '24 hours';

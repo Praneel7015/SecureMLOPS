@@ -24,6 +24,9 @@ def verify_integrity():
         target_path = BASE_DIR / relative_path
         current_hash = sha256_for_file(target_path)
         if current_hash != expected_hash:
+            print(relative_path)
+            print("EXPECTED:", expected_hash)
+            print("CURRENT :", current_hash)
             mismatches.append(relative_path)
 
     model_config = integrity_config.get("model_weights")

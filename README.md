@@ -83,49 +83,83 @@ miniproject/
 - Pillow
 - Werkzeug
 
-## Setup
+## First-Time Setup (Backend + React Frontend)
 
-### 1. Clone the repository
+### 1. Clone and open the project
 
 ```powershell
-git clone https://github.com/your-username/your-repo.git
-cd your-repo
+git clone https://github.com/Praneel7015/SecureMLOPS.git
+Set-Location -LiteralPath .\SecureMLOPS
 ```
 
-### 2. Create and activate a virtual environment
+### 2. Create and activate Python virtual environment
 
 ```powershell
 python -m venv .venv
-.venv\Scripts\activate
+.\.venv\Scripts\Activate.ps1
 ```
 
-### 3. Install dependencies
-
-If you have a `requirements.txt`, install with:
+### 3. Install backend dependencies
 
 ```powershell
 pip install -r requirements.txt
 ```
 
-If not, install the main packages manually:
+### 4. Install React frontend dependencies (`frontend` folder)
 
 ```powershell
-pip install flask torch torchvision pillow werkzeug
+Set-Location -LiteralPath .\frontend
+npm install
+Set-Location -LiteralPath ..
 ```
 
 ## Running The Project
 
-### Run the Flask web app
+### Option A (recommended): Flask serves built React app on `:5000`
+
+Build the React app first:
+
+```powershell
+Set-Location -LiteralPath .\frontend
+npm run build
+Set-Location -LiteralPath ..
+```
+
+Run Flask:
 
 ```powershell
 python app.py
 ```
 
-Then open:
+Open in browser:
 
 ```text
 http://127.0.0.1:5000
 ```
+
+### Option B: React hot-reload development mode
+
+Terminal 1 (backend):
+
+```powershell
+Set-Location -LiteralPath <path-to-cloned-repo>\SecureMLOPS
+python app.py
+```
+
+Terminal 2 (frontend dev server):
+
+```powershell
+Set-Location -LiteralPath <path-to-cloned-repo>\SecureMLOPS\frontend
+npm run dev
+```
+
+Open frontend dev URL:
+
+```text
+http://127.0.0.1:5173
+```
+
+The Vite dev server is configured to proxy backend API calls to Flask on `127.0.0.1:5000`.
 
 ### Run the simple batch script
 
@@ -168,7 +202,6 @@ This means the app is not only checking whether key code files changed, but also
 
 ## Future Improvements
 
-- Add a `requirements.txt`
 - Add unit tests for the security pipeline
 - Add admin tools for regenerating integrity fingerprints safely
 - Add per-stage timing metrics in the UI

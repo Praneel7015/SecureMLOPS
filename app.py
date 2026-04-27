@@ -5,13 +5,11 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from flask import Flask, flash, g, redirect, render_template, request, send_from_directory, session, url_for
+from flask import Flask, g, jsonify, redirect, request, send_from_directory, session, url_for
 from werkzeug.utils import secure_filename
 
-from Detection.ml_pipeline import process_image
 from auth.auth_service import authenticate_user
 from decision.engine import decide_risk
-from integrity.checker import verify_integrity
 from rate_limit.service import RateLimiter
 from utils.logging_setup import configure_logging, log_security_event
 from validation.image_validator import validate_image_path, validate_image_upload
@@ -19,6 +17,12 @@ from validation.image_validator import validate_image_path, validate_image_uploa
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_DIR = BASE_DIR / "uploads"
 IMAGE_DIR = BASE_DIR / "images"
+_REACT_DIST_CANDIDATES = [
+    BASE_DIR / "frontend" / "dist",
+    BASE_DIR / "Design SecureMLOPS UI" / "dist",  # legacy folder name fallback
+]
+REACT_DIST_DIR = next((p for p in _REACT_DIST_CANDIDATES if p.exists()), _REACT_DIST_CANDIDATES[0])
+REACT_ASSETS_DIR = REACT_DIST_DIR / "assets"
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 app = Flask(__name__)
@@ -102,32 +106,75 @@ def _after(response):
     return response
 
 
+def _wants_json() -> bool:
+    return (
+        request.is_json
+        or request.args.get("format") == "json"
+        or "application/json" in request.headers.get("Accept", "")
+    )
+
+
+def _serve_react_index():
+    react_index = REACT_DIST_DIR / "index.html"
+    if react_index.exists():
+        return send_from_directory(str(REACT_DIST_DIR), "index.html")
+    return "React frontend build not found. Run npm run build in frontend.", 503
+
+
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @app.route("/", methods=["GET"])
 def index():
-    return render_template(
-        "index.html",
-        result=None,
-        selected_image_url=None,
-        sample_images=list_sample_images(),
-        selected_sample=None,
+    return _serve_react_index()
+
+
+@app.route("/assets/<path:filename>", methods=["GET"])
+def react_assets(filename):
+    if REACT_ASSETS_DIR.exists():
+        return send_from_directory(str(REACT_ASSETS_DIR), filename)
+    return "", 404
+
+
+@app.route("/vite.svg", methods=["GET"])
+def react_vite_icon():
+    if REACT_DIST_DIR.exists():
+        return send_from_directory(str(REACT_DIST_DIR), "vite.svg")
+    return "", 404
+
+
+@app.route("/api/bootstrap", methods=["GET"])
+def api_bootstrap():
+    username = session.get("user")
+    return jsonify(
+        {
+            "authenticated": bool(username),
+            "username": username,
+            "sample_images": list_sample_images(),
+            "max_upload_size_mb": 5,
+        }
     )
 
 
 @app.route("/login", methods=["POST"])
 def login():
-    username = request.form.get("username", "").strip()
-    password = request.form.get("password", "")
+    if request.is_json:
+        payload = request.get_json(silent=True) or {}
+        username = str(payload.get("username", "")).strip()
+        password = str(payload.get("password", ""))
+    else:
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
 
     success, message = authenticate_user(username, password)
     if not success:
-        flash(message, "error")
+        if _wants_json():
+            return jsonify({"success": False, "message": message}), 401
         return redirect(url_for("index"))
 
     session["user"] = username
     _terminal_logger.info("LOGIN  user=%s ip=%s", username, request.remote_addr)
-    flash("Login successful. You can now submit an image for secure inference.", "success")
+    if _wants_json():
+        return jsonify({"success": True, "message": "Login successful.", "username": username})
     return redirect(url_for("index"))
 
 
@@ -136,7 +183,8 @@ def logout():
     user = session.get("user", "unknown")
     session.clear()
     _terminal_logger.info("LOGOUT user=%s ip=%s", user, request.remote_addr)
-    flash("You have been logged out.", "success")
+    if _wants_json():
+        return jsonify({"success": True, "message": "Logged out."})
     return redirect(url_for("index"))
 
 
@@ -144,16 +192,23 @@ def logout():
 def settings():
     username = session.get("user")
     if not username:
-        flash("Please log in to access settings.", "error")
-        return redirect(url_for("index"))
-    return render_template("settings.html", username=username)
+        if _wants_json():
+            return jsonify({"success": False, "message": "Please log in to access settings."}), 401
+        return _serve_react_index()
+
+    if _wants_json():
+        return jsonify({"success": True, "username": username})
+    return _serve_react_index()
 
 
 @app.route("/analyze", methods=["POST"])
 def analyze():
     username = session.get("user")
+    wants_json = _wants_json()
+
     if not username:
-        flash("Please log in before submitting an image.", "error")
+        if wants_json:
+            return jsonify({"success": False, "message": "Please log in before submitting an image."}), 401
         return redirect(url_for("index"))
 
     result = {"timestamp": _now(), "username": username}
@@ -173,14 +228,18 @@ def analyze():
         )
         _finalise(result)
         log_security_event(username, result)
-        flash(rate_state["message"], "error")
-        return render_template(
-            "index.html",
-            result=result,
-            selected_image_url=None,
-            sample_images=sample_images,
-            selected_sample=request.form.get("sample_image") or None,
-        )
+        if wants_json:
+            return jsonify(
+                {
+                    "success": False,
+                    "message": rate_state["message"],
+                    "result": result,
+                    "selected_image_url": None,
+                    "sample_images": sample_images,
+                    "selected_sample": request.form.get("sample_image") or None,
+                }
+            ), 429
+        return redirect(url_for("index"))
 
     # ── Input validation ──────────────────────────────────────────────────────
     uploaded_file = request.files.get("image")
@@ -212,17 +271,31 @@ def analyze():
         )
         _finalise(result)
         log_security_event(username, result)
-        flash(validation_message, "error")
-        return render_template(
-            "index.html",
-            result=result,
-            selected_image_url=_sample_url(selected_sample),
-            sample_images=sample_images,
-            selected_sample=selected_sample or None,
-        )
+        if wants_json:
+            return jsonify(
+                {
+                    "success": False,
+                    "message": validation_message,
+                    "result": result,
+                    "selected_image_url": _sample_url(selected_sample),
+                    "sample_images": sample_images,
+                    "selected_sample": selected_sample or None,
+                }
+            ), 400
+        return redirect(url_for("index"))
 
     # ── Integrity check ───────────────────────────────────────────────────────
-    integrity = verify_integrity()
+    try:
+        from integrity.checker import verify_integrity
+    except Exception as exc:
+        _terminal_logger.exception("INTEGRITY_RUNTIME_UNAVAILABLE error=%s", exc)
+        verify_integrity = None
+
+    if verify_integrity is None:
+        integrity = {"ok": False, "message": "Integrity runtime unavailable on this machine."}
+    else:
+        integrity = verify_integrity()
+
     if not integrity["ok"]:
         _terminal_logger.warning("INTEGRITY_FAIL details=%s", integrity.get("details"))
         decision = decide_risk(integrity_ok=False)
@@ -236,14 +309,18 @@ def analyze():
         )
         _finalise(result)
         log_security_event(username, result)
-        flash(integrity["message"], "error")
-        return render_template(
-            "index.html",
-            result=result,
-            selected_image_url=_sample_url(selected_sample),
-            sample_images=sample_images,
-            selected_sample=selected_sample or None,
-        )
+        if wants_json:
+            return jsonify(
+                {
+                    "success": False,
+                    "message": integrity["message"],
+                    "result": result,
+                    "selected_image_url": _sample_url(selected_sample),
+                    "sample_images": sample_images,
+                    "selected_sample": selected_sample or None,
+                }
+            ), 409
+        return redirect(url_for("index"))
 
     # ── Save file ─────────────────────────────────────────────────────────────
     ts = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -260,6 +337,57 @@ def analyze():
         selected_image_url = url_for("sample_image", filename=sample_path.name)
 
     # ── ML pipeline ───────────────────────────────────────────────────────────
+    try:
+        from Detection.ml_pipeline import process_image
+    except Exception as exc:
+        _terminal_logger.exception("ML_RUNTIME_UNAVAILABLE error=%s", exc)
+        decision = decide_risk(validation_error="ML runtime unavailable")
+        result.update(
+            status=decision["status"],
+            risk_level=decision["risk_level"],
+            decision_reason="ML runtime is unavailable on this machine. Frontend remains operational.",
+            rate_limit_message=rate_state["message"],
+            validation_message=validation_message,
+            integrity=integrity,
+            filename=filename,
+            prediction=None,
+            confidence=None,
+            verdict="unknown",
+            anomaly=True,
+            adversarial=False,
+            issues=["ml runtime unavailable"],
+            detection={
+                "label": "N/A",
+                "confidence": None,
+                "verdict": "unknown",
+                "anomaly": True,
+                "adversarial": False,
+                "issues": ["ml runtime unavailable"],
+                "top5": [],
+                "top1_confidence": None,
+                "top2_confidence": None,
+                "margin": None,
+                "normalized_entropy": None,
+                "fgsm_confidence_drop": None,
+                "transform_confidence_drop": None,
+                "transform_instability": [],
+            },
+        )
+        _finalise(result)
+        log_security_event(username, result)
+        if wants_json:
+            return jsonify(
+                {
+                    "success": False,
+                    "message": "ML runtime unavailable",
+                    "result": result,
+                    "selected_image_url": selected_image_url,
+                    "sample_images": sample_images,
+                    "selected_sample": selected_sample or None,
+                }
+            ), 503
+        return redirect(url_for("index"))
+
     _terminal_logger.info("INFERENCE user=%s file=%s", username, filename)
     detection = process_image(str(file_path))
 
@@ -294,13 +422,18 @@ def analyze():
     )
     _finalise(result)
     log_security_event(username, result)
-    return render_template(
-        "index.html",
-        result=result,
-        selected_image_url=selected_image_url,
-        sample_images=sample_images,
-        selected_sample=selected_sample or None,
-    )
+    if wants_json:
+        return jsonify(
+            {
+                "success": True,
+                "message": "Analysis completed.",
+                "result": result,
+                "selected_image_url": selected_image_url,
+                "sample_images": sample_images,
+                "selected_sample": selected_sample or None,
+            }
+        )
+    return redirect(url_for("index"))
 
 
 @app.route("/uploads/<path:filename>")
@@ -529,7 +662,8 @@ def _join_reasons(reasons, fallback, allowed):
 
 @app.errorhandler(413)
 def _too_large(_e):
-    flash("File is too large. Maximum allowed size is 5 MB.", "error")
+    if _wants_json():
+        return jsonify({"success": False, "message": "File is too large. Maximum allowed size is 5 MB."}), 413
     return redirect(url_for("index"))
 
 

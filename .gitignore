@@ -12,6 +12,12 @@ venv/
 env/
 ENV/
 
+# Frontend (Node)
+frontend/node_modules/
+frontend/build/
+frontend/dist/
+frontend/.next/
+
 # Build artifacts
 build/
 dist/

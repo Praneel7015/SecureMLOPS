@@ -7,7 +7,8 @@ __pycache__/
 .pytest_cache/
 
 # Virtual environments
-.venv/
+.venv/*
+.venv
 venv/
 env/
 ENV/
@@ -29,6 +30,7 @@ Thumbs.db
 
 # Runtime data
 logs/*
+uploads/*
 !logs/.gitkeep
 uploads/*
 !uploads/.gitkeep

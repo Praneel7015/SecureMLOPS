@@ -2,7 +2,6 @@
 access_analysis/config.py
 ─────────────────────────
 All tuneable parameters for the Access Analysis module.
-No threshold or weight is hard-coded anywhere else.
 """
 
 # ── Session rolling window ────────────────────────────────────────────────────
@@ -33,7 +32,10 @@ BASELINE_MIN_ROWS = 3      # minimum rows needed before baseline is applied
 RISK_LOW_MAX    = 0.35     # ≤ → LOW  → ALLOW
 RISK_MEDIUM_MAX = 0.65     # ≤ → MEDIUM → MONITOR
 
-# ── Supabase (set these via environment variables) ───────────────────────────
-SUPABASE_URL = None        # overridden by env var SUPABASE_URL
-SUPABASE_KEY = None        # overridden by env var SUPABASE_ANON_KEY
-SUPABASE_TABLE = "security_logs"
+# ── AWS PostgreSQL / RDS (set these via environment variables) ────────────────
+DB_HOST     = None         # overridden by env var DB_HOST     (your RDS endpoint)
+DB_PORT     = 5432         # overridden by env var DB_PORT
+DB_NAME     = None         # overridden by env var DB_NAME
+DB_USER     = None         # overridden by env var DB_USER
+DB_PASSWORD = None         # overridden by env var DB_PASSWORD
+DB_TABLE    = "security_logs"

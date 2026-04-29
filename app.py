@@ -4,7 +4,8 @@ import shutil
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-
+from dotenv import load_dotenv
+load_dotenv()
 from flask import Flask, flash, g, redirect, render_template, request, send_from_directory, session, url_for
 from werkzeug.utils import secure_filename
 

@@ -113,10 +113,16 @@ If not, install the main packages manually:
 pip install flask torch torchvision pillow werkzeug
 ```
 
-##
-```
-export SUPABASE_URL=your_supabase_apiurl
-export SUPABASE_ANON_KEY=your_anon_key_here
+`.env` File
+
+Create a `.env` file in the project root:
+
+```env
+DB_HOST=mydb.abc123xyz.us-east-1.rds.amazonaws.com
+DB_PORT=5432
+DB_NAME=securemlops
+DB_USER=secureml_user
+DB_PASSWORD=your-strong-password-here
 ```
 ## Running The Project
 

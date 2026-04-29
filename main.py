@@ -1,6 +1,8 @@
 import os
 from Detection import ml_pipeline
+from dotenv import load_dotenv
 
+load_dotenv()
 IMAGE_FOLDER = "images"
 
 def main():

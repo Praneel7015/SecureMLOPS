@@ -112,6 +112,25 @@ If not, install the main packages manually:
 ```powershell
 pip install flask torch torchvision pillow werkzeug
 ```
+`.env` File
+
+Create a `.env` file in the project root:
+
+```env
+DB_HOST=mydb.abc123xyz.us-east-1.rds.amazonaws.com
+DB_PORT=5432
+DB_NAME=securemlops
+DB_USER=secureml_user
+DB_PASSWORD=your-strong-password-here
+```
+
+### Connect to RDS
+
+Connect to your RDS instance using `psql` (or any PostgreSQL GUI like DBeaver/pgAdmin):
+
+```bash
+psql -h your-rds-endpoint.rds.amazonaws.com -U secureml_user -d securemlops
+```
 
 ## Running The Project
 

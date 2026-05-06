@@ -40,6 +40,9 @@ uploads/*
 !logs/.gitkeep
 uploads/*
 !uploads/.gitkeep
+TODO.md
+skills-lock.json
+.agents/
 
 # Local secrets and overrides
 .env

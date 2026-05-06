@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
+import { LandingPage } from './components/LandingPage';
 import { Login } from './components/Login';
 import { Dashboard } from './components/Dashboard';
-import { Settings } from './components/Settings';
+import { SettingsComponent as Settings } from './components/Settings';
+import { ActivityPage } from './components/Activity';
+import { InputPage } from './components/InputPage';
 import { apiBootstrap, apiLogin, apiLogout, SampleImage } from './api';
 
-type View = 'loading' | 'login' | 'dashboard' | 'settings';
+type View = 'loading' | 'login' | 'landing' | 'dashboard' | 'settings' | 'activity' | 'input';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<View>('loading');
@@ -27,10 +30,10 @@ export default function App() {
       const boot = await apiBootstrap();
       setSampleImages(boot.sample_images || []);
       setUsername(boot.username);
-      setCurrentView(boot.authenticated ? 'dashboard' : 'login');
+      setCurrentView(boot.authenticated ? 'dashboard' : 'landing');
       setAppError('');
     } catch (_error) {
-      setCurrentView('login');
+      setCurrentView('landing');
       setAppError('Could not reach backend bootstrap API. Ensure Flask is running on port 5000.');
     }
   };
@@ -54,21 +57,29 @@ export default function App() {
       // ignore logout transport errors and reset local state anyway
     }
     setUsername(null);
-    setCurrentView('login');
+    setCurrentView('landing');
   };
 
   const handleNavigateToSettings = () => {
     setCurrentView('settings');
   };
 
+  const handleNavigateToActivity = () => {
+    setCurrentView('activity');
+  };
+
+  const handleNavigateToInput = () => {
+    setCurrentView('input');
+  };
+
   const handleBackToDashboard = () => {
     setCurrentView('dashboard');
   };
 
-  if (currentView === 'loading') {
+    if (currentView === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
-        Loading SecureMLOPS UI...
+        Loading Axion...
       </div>
     );
   }
@@ -81,14 +92,23 @@ export default function App() {
         </div>
       )}
 
-      {currentView === 'login' && <Login onLogin={handleLogin} />}
+      {currentView === 'landing' && <LandingPage onNavigateLogin={() => setCurrentView('login')} />}
+      {currentView === 'login' && <Login onLogin={handleLogin} onBack={() => setCurrentView('landing')} />}
       {currentView === 'dashboard' && (
         <Dashboard
           username={username || 'user'}
           sampleImages={sampleImages}
           onLogout={handleLogout}
           onNavigateToSettings={handleNavigateToSettings}
+          onNavigateToInput={handleNavigateToInput}
+          onNavigateToActivity={handleNavigateToActivity}
         />
+      )}
+      {currentView === 'activity' && (
+        <ActivityPage recentScans={[]} auditLog={[]} />
+      )}
+      {currentView === 'input' && (
+        <InputPage samples={sampleImages.map((i) => ({ value: i.name, label: i.name, url: i.url }))} />
       )}
       {currentView === 'settings' && (
         <Settings

@@ -2,12 +2,24 @@ import { useEffect, useState, useRef } from 'react';
 import { Upload, Image as ImageIcon, CheckCircle2, XCircle, AlertCircle, ChevronDown, ChevronUp, Shield, Settings as SettingsIcon, LogOut, Menu, X, TrendingUp, FileCheck, AlertTriangle, Clock, Activity, Zap, Database, Lock } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { apiAnalyze, AnalysisResult, SampleImage } from '../api';
+import { Button } from './ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
+import { Badge } from './ui/badge';
+import { Progress } from './ui/progress';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { Label } from './ui/label';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './ui/resizable';
+import { ScrollArea } from './ui/scroll-area';
+import { cn } from './ui/utils';
 
 interface DashboardProps {
   username: string;
   sampleImages: SampleImage[];
   onLogout: () => void | Promise<void>;
   onNavigateToSettings: () => void;
+  onNavigateToInput: () => void;
+  onNavigateToActivity: () => void;
 }
 
 type PipelineStage = {
@@ -92,6 +104,20 @@ export function Dashboard({ username, sampleImages, onLogout, onNavigateToSettin
     setSelectedFile(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setSelectedFile(e.dataTransfer.files[0]);
+      setSelectedSample('');
     }
   };
 
@@ -213,65 +239,118 @@ export function Dashboard({ username, sampleImages, onLogout, onNavigateToSettin
     }
   };
 
+  const getAuditBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'success':
+        return 'default';
+      case 'warning':
+        return 'secondary';
+      case 'error':
+        return 'destructive';
+      default:
+        return 'outline';
+    }
+  };
+
+  const getVerdictBadgeVariant = (verdict: string) => {
+    switch (verdict) {
+      case 'safe':
+        return 'default';
+      case 'suspicious':
+        return 'secondary';
+      case 'malicious':
+        return 'destructive';
+      default:
+        return 'outline';
+    }
+  };
+
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-background text-foreground">
       {/* Mobile Header */}
       <div className="lg:hidden flex items-center justify-between p-4 border-b border-border bg-card">
         <div className="flex items-center gap-2">
           <Shield className="w-6 h-6 text-accent" />
-          <span className="font-mono">SecureMLOPS</span>
+          <span className="font-mono text-lg font-bold">Axion</span>
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2 rounded-lg hover:bg-muted"
-          >
-            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Menu className="w-5 h-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[280px] sm:w-[350px] p-0 flex flex-col">
+              <SheetHeader className="p-4 border-b border-border text-left">
+                <SheetTitle className="flex items-center gap-2 font-mono text-xl">
+                  <Shield className="w-6 h-6 text-accent" />
+                  Axion
+                </SheetTitle>
+              </SheetHeader>
+              <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start gap-3"
+                  onClick={() => {
+                    onNavigateToSettings();
+                    setIsMobileMenuOpen(false);
+                  }}
+                >
+                  <SettingsIcon className="w-5 h-5" />
+                  Settings
+                </Button>
+              </nav>
+              <div className="p-4 border-t border-border">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start gap-3 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    onLogout();
+                  }}
+                >
+                  <LogOut className="w-5 h-5" />
+                  Logout
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
-
-      {/* Mobile Menu */}
-      {isMobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 bg-background z-50 pt-16">
-          <div className="p-4 space-y-2">
-            <button
-              onClick={() => {
-                onNavigateToSettings();
-                setIsMobileMenuOpen(false);
-              }}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors text-left"
-            >
-              <SettingsIcon className="w-5 h-5" />
-              <span>Settings</span>
-            </button>
-            <button
-              onClick={onLogout}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted text-destructive transition-colors text-left"
-            >
-              <LogOut className="w-5 h-5" />
-              <span>Logout</span>
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Sidebar - Desktop */}
       <div className="hidden lg:flex lg:flex-col lg:w-64 border-r border-sidebar-border bg-sidebar p-4">
         <div className="flex items-center gap-2 mb-8">
           <Shield className="w-8 h-8 text-accent" />
-          <span className="font-mono">SecureMLOPS</span>
+          <span className="font-mono">Axion</span>
         </div>
 
         <nav className="flex-1 space-y-2">
-          <button
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3"
+              onClick={() => { onNavigateToInput(); }}
+            >
+              <Upload className="w-5 h-5" />
+              Input
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3"
+              onClick={() => { onNavigateToActivity(); }}
+            >
+              <Activity className="w-5 h-5" />
+              Activity
+            </Button>
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3"
             onClick={onNavigateToSettings}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-sidebar-accent transition-colors text-left"
           >
             <SettingsIcon className="w-5 h-5" />
-            <span>Settings</span>
-          </button>
+            Settings
+          </Button>
         </nav>
 
         <div className="border-t border-sidebar-border pt-4 space-y-2">
@@ -279,49 +358,95 @@ export function Dashboard({ username, sampleImages, onLogout, onNavigateToSettin
             <span className="font-mono">Theme</span>
             <ThemeToggle />
           </div>
-          <button
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 text-destructive hover:bg-destructive/10"
             onClick={onLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-sidebar-accent text-destructive transition-colors text-left"
           >
             <LogOut className="w-5 h-5" />
-            <span>Logout</span>
-          </button>
+            Logout
+          </Button>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        {/* Input Panel */}
-        <div className={`input-panel bg-card border-b lg:border-b-0 lg:border-r border-border transition-all duration-300 ${isInputPanelOpen ? 'lg:w-96' : 'lg:w-0'} overflow-hidden`}>
-          <div className="p-6 space-y-6">
+        {/* Responsive Content Container */}
+        <ResizablePanelGroup direction="horizontal" className="hidden lg:flex w-full h-full">
+          {/* Input Panel Desktop */}
+          {isInputPanelOpen && (
+            <>
+              <ResizablePanel defaultSize={35} minSize={25} maxSize={50} className="bg-card">
+                <ScrollArea className="h-full">
+                  <div className="p-6 space-y-6">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button size="sm" variant="outline" onClick={() => onNavigateToInput()}>
+                        Open Input Page
+                      </Button>
+                      <Button size="sm" onClick={() => onNavigateToActivity()}>
+                        Open Activity
+                      </Button>
+                    </div>
             <div className="flex items-center justify-between">
-              <h2 className="text-foreground">Analysis Input</h2>
-              <button
-                id="toggleInputPanel"
+              <h2 className="text-xl font-semibold">Analysis Input</h2>
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => setIsInputPanelOpen(!isInputPanelOpen)}
-                className="hidden lg:block p-1 hover:bg-muted rounded"
+                className="hidden lg:flex"
               >
                 {isInputPanelOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-              </button>
+              </Button>
             </div>
 
-            <p className="font-mono text-muted-foreground">Signed in as {username}</p>
+            <p className="font-mono text-sm text-muted-foreground">Signed in as {username}</p>
 
             <form action="/analyze" method="post" encType="multipart/form-data" onSubmit={handleAnalyze} className="space-y-6">
               {/* File Upload */}
-              <div>
-                <label className="block mb-2 text-foreground">Upload Image</label>
-                <div
+              <div className="space-y-2">
+                <Label>Upload Image</Label>
+                <Card
                   onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-accent transition-colors bg-input-background"
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                  className="border-dashed cursor-pointer hover:border-accent transition-colors bg-muted/30 group relative"
                 >
-                  <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-muted-foreground mb-1">Click to upload</p>
-                  <p className="font-mono text-muted-foreground">.jpg, .jpeg, .png</p>
-                  {selectedFile && (
-                    <p id="filePreviewName" className="mt-2 text-foreground font-mono">{selectedFile.name}</p>
-                  )}
-                </div>
+                  <CardContent className="p-6 flex flex-col items-center text-center">
+                    {selectedFile ? (
+                      <div className="relative w-full">
+                        <img
+                          src={URL.createObjectURL(selectedFile)}
+                          alt="Preview"
+                          className="mx-auto max-h-48 object-contain rounded-md"
+                        />
+                        <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-md">
+                          <Upload className="w-8 h-8 mb-2 text-accent" />
+                          <span className="font-medium">Change Image</span>
+                        </div>
+                        <p className="mt-4 font-mono text-sm truncate">{selectedFile.name}</p>
+                      </div>
+                    ) : selectedSample ? (
+                      <div className="relative w-full">
+                        <img
+                          src={samples.find(s => s.value === selectedSample)?.url || ''}
+                          alt="Sample Preview"
+                          className="mx-auto max-h-48 object-contain rounded-md"
+                        />
+                        <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-md">
+                          <Upload className="w-8 h-8 mb-2 text-accent" />
+                          <span className="font-medium">Upload Instead</span>
+                        </div>
+                        <p className="mt-4 font-mono text-sm truncate">{selectedSample}</p>
+                      </div>
+                    ) : (
+                      <>
+                        <Upload className="w-8 h-8 mb-2 text-muted-foreground group-hover:scale-110 transition-transform" />
+                        <p className="text-sm text-muted-foreground mb-1">Click or drag & drop</p>
+                        <p className="font-mono text-xs text-muted-foreground">.jpg, .jpeg, .png</p>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -334,13 +459,16 @@ export function Dashboard({ username, sampleImages, onLogout, onNavigateToSettin
               </div>
 
               {/* Sample Selection */}
-              <div>
-                <label className="block mb-2 text-foreground">Or Select Sample</label>
-                <div className="space-y-2">
+              <div className="space-y-2">
+                <Label>Or Select Sample</Label>
+                <div className="grid gap-2">
                   {samples.map((sample) => (
-                    <label
+                    <Label
                       key={sample.value}
-                      className="flex items-center gap-3 p-3 border border-border rounded-lg cursor-pointer hover:bg-muted transition-colors"
+                      className={cn(
+                        "flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted transition-colors",
+                        selectedSample === sample.value ? "border-accent bg-accent/10" : ""
+                      )}
                     >
                       <input
                         type="radio"
@@ -348,233 +476,214 @@ export function Dashboard({ username, sampleImages, onLogout, onNavigateToSettin
                         value={sample.value}
                         checked={selectedSample === sample.value}
                         onChange={() => handleSampleSelect(sample.value)}
-                        className="w-4 h-4 text-accent focus:ring-accent"
+                        className="w-4 h-4 text-accent focus:ring-accent hidden"
                       />
                       {sample.url ? (
                         <img src={sample.url} alt={sample.label} className="w-8 h-8 rounded object-cover" />
                       ) : (
                         <ImageIcon className="w-4 h-4 text-muted-foreground" />
                       )}
-                      <span className="flex-1 font-mono">{sample.label}</span>
-                    </label>
+                      <span className="flex-1 font-mono text-sm">{sample.label}</span>
+                    </Label>
                   ))}
                 </div>
               </div>
 
-              <button
-                id="openInputPanel"
+              <Button
                 type="submit"
                 disabled={isAnalyzing || (!selectedFile && !selectedSample)}
-                className="w-full bg-accent hover:bg-accent-600 disabled:bg-muted disabled:text-muted-foreground text-accent-foreground py-3 rounded-lg transition-colors"
+                className="w-full"
               >
                 {isAnalyzing ? 'Analyzing...' : 'Run Analysis'}
-              </button>
+              </Button>
             </form>
-          </div>
-        </div>
-
-        {/* Main Content Area */}
-        <div className="flex-1 overflow-auto p-6 space-y-6">
-          {message && (
-            <div className={`rounded-lg border px-4 py-3 ${messageType === 'error' ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-success/30 bg-success/10 text-success'}`}>
-              {message}
-            </div>
+                  </div>
+                </ScrollArea>
+              </ResizablePanel>
+              <ResizableHandle withHandle />
+            </>
           )}
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-card rounded-lg border border-border p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-muted-foreground">Total Scans</span>
-                <TrendingUp className="w-5 h-5 text-accent" />
-              </div>
-              <div className="text-foreground">247</div>
-              <p className="font-mono text-muted-foreground mt-1">+12 this week</p>
-            </div>
+          {/* Main Content Area Desktop */}
+          <ResizablePanel defaultSize={isInputPanelOpen ? 65 : 100} className="bg-background">
+            <ScrollArea className="h-full">
+              <div className="p-6 space-y-6">
+          {message && (
+            <Alert variant={messageType === 'error' ? 'destructive' : 'default'} className={messageType === 'success' ? 'border-success text-success bg-success/10' : ''}>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>{messageType === 'error' ? 'Error' : 'Success'}</AlertTitle>
+              <AlertDescription>{message}</AlertDescription>
+            </Alert>
+          )}
 
-            <div className="bg-card rounded-lg border border-border p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-muted-foreground">Safe Models</span>
-                <FileCheck className="w-5 h-5 text-success" />
-              </div>
-              <div className="text-foreground">189</div>
-              <p className="font-mono text-success mt-1">76.5% pass rate</p>
-            </div>
+          {/* Removed stats cards per request - kept dashboard focused on pipeline and analysis */}
 
-            <div className="bg-card rounded-lg border border-border p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-muted-foreground">Threats Detected</span>
-                <AlertTriangle className="w-5 h-5 text-destructive" />
-              </div>
-              <div className="text-foreground">14</div>
-              <p className="font-mono text-destructive mt-1">5.7% threat rate</p>
-            </div>
+          {/* Top Row: Recent Scans, Quick Actions, Audit Log */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Scans</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {recentScans.map((scan) => (
+                  <div key={scan.id} className="p-3 border rounded-lg bg-card">
+                    <div className="flex items-start justify-between mb-2">
+                      <span className="font-mono text-sm truncate pr-2">{scan.filename}</span>
+                      <Badge variant={getVerdictBadgeVariant(scan.verdict as any)} className="capitalize font-mono">
+                        {scan.verdict}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground font-mono">
+                      <span>{scan.timestamp}</span>
+                      <span>Score: {scan.score}</span>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
 
-            <div className="bg-card rounded-lg border border-border p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-muted-foreground">Avg Analysis Time</span>
-                <Clock className="w-5 h-5 text-accent" />
-              </div>
-              <div className="text-foreground">3.2s</div>
-              <p className="font-mono text-muted-foreground mt-1">-0.5s improvement</p>
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button variant="outline" className="w-full justify-start gap-3">
+                  <Upload className="w-4 h-4 text-accent" />
+                  Upload Model
+                </Button>
+                <Button variant="outline" className="w-full justify-start gap-3">
+                  <FileCheck className="w-4 h-4 text-success" />
+                  View Reports
+                </Button>
+                <Button variant="outline" className="w-full justify-start gap-3">
+                  <Activity className="w-4 h-4 text-accent" />
+                  System Status
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Audit Log</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {auditLog.map((entry) => (
+                  <div key={entry.id} className="p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                    <div className="flex items-start gap-3">
+                      <Badge variant={getAuditBadgeVariant(entry.status)} className="font-mono uppercase text-[10px]">
+                        {entry.status}
+                      </Badge>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1">
+                          <span className="text-sm font-medium">{entry.action}</span>
+                          <span className="font-mono text-xs text-muted-foreground whitespace-nowrap">{entry.timestamp}</span>
+                        </div>
+                        {entry.details && (
+                          <p className="font-mono text-xs text-muted-foreground mt-1 truncate">{entry.details}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Two Column Layout */}
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            {/* Pipeline Panel - Takes 2 columns */}
-            <div className="xl:col-span-2 space-y-6">
-              <div className="pipeline-panel bg-card rounded-lg border border-border p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-foreground">Analysis Pipeline</h2>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Activity className="w-4 h-4" />
-                    <span className="font-mono">{pipelineStages.filter((stage) => stage.status !== 'pending').length}/9 stages</span>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  {pipelineStages.map((stage) => (
-                    <div key={stage.id} className="border border-border rounded-lg overflow-hidden">
-                      <div
-                        onClick={() => setExpandedStage(expandedStage === stage.id ? null : stage.id)}
-                        className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors"
-                      >
-                        <div className="flex items-center gap-3 flex-1">
-                          {getStatusIcon(stage.status)}
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="font-mono text-foreground">{stage.name}</span>
-                              {stage.duration && (
-                                <span className="font-mono text-muted-foreground ml-2">{stage.duration}</span>
-                              )}
-                            </div>
-                            {stage.status === 'running' && stage.progress !== undefined && (
-                              <div className="w-full bg-muted rounded-full h-1.5 mt-2">
-                                <div
-                                  className="bg-accent h-1.5 rounded-full transition-all duration-300"
-                                  style={{ width: `${stage.progress}%` }}
-                                />
-                              </div>
+          {/* Pipeline & Current Analysis */}
+          <div className="mt-6 space-y-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Analysis Pipeline</CardTitle>
+                <Badge variant="secondary" className="font-mono">
+                  <Activity className="w-3 h-3 mr-1 inline-block" />
+                  {pipelineStages.filter((stage) => stage.status !== 'pending').length}/9 stages
+                </Badge>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {pipelineStages.map((stage) => (
+                  <div key={stage.id} className="border border-border rounded-lg overflow-hidden">
+                    <div
+                      onClick={() => setExpandedStage(expandedStage === stage.id ? null : stage.id)}
+                      className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 flex-1">
+                        {getStatusIcon(stage.status)}
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-mono text-sm">{stage.name}</span>
+                            {stage.duration && (
+                              <span className="font-mono text-xs text-muted-foreground ml-2">{stage.duration}</span>
                             )}
                           </div>
+                          {stage.status === 'running' && stage.progress !== undefined && (
+                            <Progress value={stage.progress} className="h-1.5 mt-2" />
+                          )}
                         </div>
-                        {expandedStage === stage.id ? <ChevronUp className="w-4 h-4 ml-2" /> : <ChevronDown className="w-4 h-4 ml-2" />}
                       </div>
-                      {expandedStage === stage.id && stage.message && (
-                        <div className="px-4 pb-4 pt-2 border-t border-border bg-muted/30">
-                          <p className="font-mono text-muted-foreground">
-                            {stage.message}
-                          </p>
-                        </div>
-                      )}
+                      {expandedStage === stage.id ? <ChevronUp className="w-4 h-4 ml-2" /> : <ChevronDown className="w-4 h-4 ml-2" />}
                     </div>
-                  ))}
-                </div>
-              </div>
+                    {expandedStage === stage.id && stage.message && (
+                      <div className="px-4 pb-4 pt-2 border-t border-border bg-muted/30">
+                        <p className="font-mono text-sm text-muted-foreground">
+                          {stage.message}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
 
-              {/* Verdict Card */}
-              <div className="verdict-card bg-card rounded-lg border border-border p-6">
-                <h2 className="mb-4 text-foreground">Current Analysis</h2>
+            <Card>
+              <CardHeader>
+                <CardTitle>Current Analysis</CardTitle>
+              </CardHeader>
+              <CardContent>
                 {backendResult ? (
-                  <div className="p-6 bg-muted/40 border border-border rounded-lg space-y-3">
-                    <h3 className="text-foreground mb-1">{backendResult.decision_reason}</h3>
-                    <p className="font-mono text-muted-foreground">Status: {backendResult.status.replaceAll('_', ' ')}</p>
-                    <div className="grid grid-cols-2 gap-3 font-mono">
-                      <div className="flex items-center gap-2">
-                        <Database className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">Prediction: {backendResult.prediction || 'N/A'}</span>
+                  <Alert>
+                    <AlertTitle className="text-lg font-semibold">{backendResult.decision_reason}</AlertTitle>
+                    <AlertDescription>
+                      <p className="font-mono text-sm mt-2 mb-4">Status: <Badge variant="outline">{backendResult.status.replaceAll('_', ' ')}</Badge></p>
+                      <div className="grid grid-cols-2 gap-3 font-mono text-sm">
+                        <div className="flex items-center gap-2">
+                          <Database className="w-4 h-4 text-muted-foreground" />
+                          <span>Prediction: {backendResult.prediction || 'N/A'}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Lock className="w-4 h-4 text-muted-foreground" />
+                          <span>Confidence: {backendResult.confidence ? `${(backendResult.confidence * 100).toFixed(2)}%` : 'N/A'}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Lock className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">Confidence: {backendResult.confidence ? `${(backendResult.confidence * 100).toFixed(2)}%` : 'N/A'}</span>
-                      </div>
-                    </div>
-                  </div>
+                    </AlertDescription>
+                  </Alert>
                 ) : (
-                  <div className="p-6 bg-warning/10 border border-warning/20 rounded-lg">
-                    <div className="flex items-start gap-4">
-                      <div className="p-3 bg-warning/20 rounded-lg">
-                        <Zap className="w-6 h-6 text-warning" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-foreground mb-1">Pipeline Ready</h3>
-                        <p className="font-mono text-muted-foreground mb-3">Run analysis to inspect your 9-stage security pipeline output.</p>
-                      </div>
-                    </div>
-                  </div>
+                  <Alert className="bg-warning/10 border-warning/20 text-warning-foreground">
+                    <Zap className="h-4 w-4" />
+                    <AlertTitle>Pipeline Ready</AlertTitle>
+                    <AlertDescription className="font-mono text-sm mt-1">
+                      Run analysis to inspect your 9-stage security pipeline output.
+                    </AlertDescription>
+                  </Alert>
                 )}
-              </div>
-            </div>
-
-            {/* Right Sidebar - Recent Scans */}
-            <div className="space-y-6">
-              {/* Recent Scans */}
-              <div className="bg-card rounded-lg border border-border p-6">
-                <h2 className="mb-4 text-foreground">Recent Scans</h2>
-                <div className="space-y-3">
-                  {recentScans.map((scan) => (
-                    <div key={scan.id} className={`p-3 border rounded-lg ${getVerdictBg(scan.verdict)}`}>
-                      <div className="flex items-start justify-between mb-2">
-                        <span className="font-mono text-foreground">{scan.filename}</span>
-                        <span className={`font-mono ${getVerdictColor(scan.verdict)} capitalize`}>
-                          {scan.verdict}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-muted-foreground">{scan.timestamp}</span>
-                        <span className="font-mono text-muted-foreground">Score: {scan.score}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Quick Actions */}
-              <div className="bg-card rounded-lg border border-border p-6">
-                <h2 className="mb-4 text-foreground">Quick Actions</h2>
-                <div className="space-y-2">
-                  <button className="w-full flex items-center gap-3 px-4 py-3 border border-border rounded-lg hover:bg-muted transition-colors text-left">
-                    <Upload className="w-4 h-4 text-accent" />
-                    <span className="font-mono">Upload Model</span>
-                  </button>
-                  <button className="w-full flex items-center gap-3 px-4 py-3 border border-border rounded-lg hover:bg-muted transition-colors text-left">
-                    <FileCheck className="w-4 h-4 text-success" />
-                    <span className="font-mono">View Reports</span>
-                  </button>
-                  <button className="w-full flex items-center gap-3 px-4 py-3 border border-border rounded-lg hover:bg-muted transition-colors text-left">
-                    <Activity className="w-4 h-4 text-accent" />
-                    <span className="font-mono">System Status</span>
-                  </button>
-                </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
+              </div>
+            </ScrollArea>
+          </ResizablePanel>
+        </ResizablePanelGroup>
 
-          {/* Audit Log - Full Width */}
-          <div className="audit-list bg-card rounded-lg border border-border p-6">
-            <h2 className="mb-4 text-foreground">Audit Log</h2>
-            <div className="space-y-2">
-              {auditLog.map((entry) => (
-                <div key={entry.id} className="p-3 border border-border rounded-lg hover:bg-muted/50 transition-colors">
-                  <div className="flex items-start gap-3">
-                    <span className={`px-2 py-1 rounded font-mono ${getAuditStatusColor(entry.status)}`}>
-                      {entry.status.toUpperCase()}
-                    </span>
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between">
-                        <span className="text-foreground">{entry.action}</span>
-                        <span className="font-mono text-muted-foreground">{entry.timestamp}</span>
-                      </div>
-                      {entry.details && (
-                        <p className="font-mono text-muted-foreground mt-1">{entry.details}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+        {/* Mobile View - Fallback to standard flex flow for narrow screens */}
+        <div className="flex-1 flex flex-col lg:hidden overflow-auto p-6 space-y-6">
+           <Alert className="bg-muted text-muted-foreground border-border">
+             <AlertCircle className="h-4 w-4" />
+             <AlertTitle>Notice</AlertTitle>
+             <AlertDescription>
+               Please use a desktop browser to access the full analysis dashboard interface with input controls.
+             </AlertDescription>
+           </Alert>
         </div>
+
       </div>
     </div>
   );

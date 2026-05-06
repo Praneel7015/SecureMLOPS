@@ -95,7 +95,7 @@ Set-Location -LiteralPath .\SecureMLOPS
 ### 2. Create and activate Python virtual environment
 
 ```powershell
-python -m venv .venv
+py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 

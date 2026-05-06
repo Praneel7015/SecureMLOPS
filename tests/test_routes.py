@@ -5,7 +5,6 @@ Or: python tests/test_routes.py
 """
 
 import sys
-import os
 from pathlib import Path
 
 # Add parent directory to path for imports

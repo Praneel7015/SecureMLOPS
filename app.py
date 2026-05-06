@@ -5,7 +5,10 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from flask import Flask, g, jsonify, redirect, request, send_from_directory, session, url_for
+from dotenv import load_dotenv
+load_dotenv()
+
+from flask import Flask, flash, g, redirect, render_template, request, send_from_directory, session, url_for
 from werkzeug.utils import secure_filename
 
 from auth.auth_service import authenticate_user
@@ -13,6 +16,9 @@ from decision.engine import decide_risk
 from rate_limit.service import RateLimiter
 from utils.logging_setup import configure_logging, log_security_event
 from validation.image_validator import validate_image_path, validate_image_upload
+
+from access_analysis import analyse_request
+
 
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_DIR = BASE_DIR / "uploads"
@@ -253,6 +259,7 @@ def analyze():
 
     if uploaded_file and uploaded_file.filename:
         is_valid, validation_message = validate_image_upload(uploaded_file, app.config["MAX_CONTENT_LENGTH"])
+        input_identifier = uploaded_file.filename
     elif selected_sample:
         sample_path = _safe_sample(selected_sample)
         is_valid, validation_message = (
@@ -260,8 +267,11 @@ def analyze():
             if sample_path
             else (False, "Selected sample image is invalid.")
         )
+        input_identifier = selected_sample
+
     else:
         is_valid, validation_message = False, "Please upload an image or choose one from the sample gallery."
+        input_identifier = "__no_input__"
 
     if not is_valid:
         _terminal_logger.warning("VALIDATE_FAIL user=%s reason=%s", username, validation_message)
@@ -314,19 +324,48 @@ def analyze():
         )
         _finalise(result)
         log_security_event(username, result)
-        if wants_json:
-            return jsonify(
-                {
-                    "success": False,
-                    "message": integrity["message"],
-                    "result": result,
-                    "selected_image_url": _sample_url(selected_sample),
-                    "sample_images": sample_images,
-                    "selected_sample": selected_sample or None,
-                }
-            ), 409
-        return redirect(url_for("index"))
+        flash(integrity["message"], "error")
+        return render_template(
+            "index.html",
+            result=result,
+            selected_image_url=_sample_url(selected_sample),
+            sample_images=sample_images,
+            selected_sample=selected_sample or None,
+        )
+    # ────────────────────────────────────────────────────────────────────────
+    # ── ACCESS ANALYSIS  ───────────────────────
+    # ────────────────────────────────────────────────────────────────────────
+    access_result = analyse_request(
+        user_id          = username,
+        input_identifier = input_identifier,
+        request_type     = pipeline_mode,
+        response_status  = "200",           # optimistic; updated below if blocked
+    )
 
+    if not access_result["allowed"]:
+        _terminal_logger.warning(
+            "ACCESS_BLOCK user=%s risk=%.3f reason=%s",
+            username, access_result["final_risk"], access_result["reason"],
+        )
+        result.update(
+            status              = "blocked",
+            risk_level          = _access_risk_level(access_result["final_risk"]),
+            decision_reason     = access_result["reason"],
+            rate_limit_message  = rate_state["message"],
+            validation_message  = validation_message,
+            integrity           = integrity,
+            access_analysis     = access_result,
+        )
+        _finalise(result)
+        log_security_event(username, result)
+        flash(f"Access blocked: {access_result['reason']}", "error")
+        return render_template(
+            "index.html",
+            result=result,
+            selected_image_url=_sample_url(selected_sample),
+            sample_images=sample_images,
+            selected_sample=selected_sample or None,
+        )
     # ── Save file ─────────────────────────────────────────────────────────────
     ts = datetime.now().strftime("%Y%m%d%H%M%S")
     if uploaded_file and uploaded_file.filename:
@@ -424,6 +463,7 @@ def analyze():
         adversarial=detection["adversarial"],
         issues=detection["issues"],
         detection=detection,
+        access_analysis=access_result,
     )
     _finalise(result)
     log_security_event(username, result)
@@ -479,6 +519,12 @@ def _sample_url(selected_sample: str):
     path = _safe_sample(selected_sample)
     return url_for("sample_image", filename=path.name) if path else None
 
+def _access_risk_level(risk: float) -> str:
+    if risk <= 0.35:
+        return "LOW"
+    elif risk <= 0.65:
+        return "MEDIUM"
+    return "HIGH"
 
 def _finalise(result: dict) -> None:
     result["pipeline_steps"] = _build_pipeline(result)
@@ -494,7 +540,9 @@ def _build_pipeline(result: dict) -> list:
     detection = result.get("detection") or {}
     status = result.get("status")
     failure_stage = _failure_stage(result)
-    step_order = ["auth", "rate", "validate", "preprocess", "integrity", "predict", "anomaly", "adversarial", "decision"]
+    access = result.get("access_analysis") or {}
+
+    step_order = ["auth", "rate", "validate", "preprocess", "integrity","access", "predict", "anomaly", "adversarial", "decision"]
 
     steps = [
         {
@@ -521,6 +569,19 @@ def _build_pipeline(result: dict) -> list:
             "id": "integrity", "number": "5", "title": "Model Integrity", "label": "Fingerprint Verify",
             "body": "Protected source files and model weights hashed and compared against stored fingerprints.",
             "details": [{"label": "Config", "value": "config/integrity.json"}, {"label": "Result", "value": (result.get("integrity") or {}).get("message", "Not evaluated")}],
+        },
+        # ── NEW: Access Analysis pipeline step ────────────────────────────
+        {
+            "id": "access", "number": "6", "title": "Access Analysis", "label": "Behaviour Check",
+            "body": access.get("reason", "Behavioural access analysis completed."),
+            "details": [
+                {"label": "Access Risk",  "value": f"{access.get('final_risk', 0):.3f}"},
+                {"label": "Frequency",    "value": f"{(access.get('breakdown') or {}).get('frequency_risk', 0):.3f}"},
+                {"label": "Timing",       "value": f"{(access.get('breakdown') or {}).get('timing_risk', 0):.3f}"},
+                {"label": "Repetition",   "value": f"{(access.get('breakdown') or {}).get('repetition_risk', 0):.3f}"},
+                {"label": "Hist. Avg",    "value": f"{access.get('historical_avg'):.3f}" if access.get("historical_avg") is not None else "N/A"},
+                {"label": "Decision",     "value": access.get("decision", "N/A")},
+            ],
         },
         {
             "id": "predict", "number": "6", "title": "AI Prediction", "label": "Model Inference",
@@ -601,6 +662,7 @@ def _build_pipeline(result: dict) -> list:
 
 
 def _build_audit(result: dict) -> list:
+    access = result.get("access_analysis") or {}
     logs = [
         {"stage": "AUTH", "decision": "pass", "message": f'User "{result.get("username", "unknown")}" authenticated.'},
         {"stage": "RATE", "decision": "pass", "message": result.get("rate_limit_message", "Rate check completed.")},
@@ -616,6 +678,18 @@ def _build_audit(result: dict) -> list:
             "message": integrity.get("message", "Integrity check completed."),
         })
 
+    # ── Access Analysis audit entry ───────────────────────────────────────────
+    if access:
+        _dec_map = {"ALLOW": "pass", "MONITOR": "warn", "BLOCK": "fail"}
+        logs.append({
+            "stage":    "ACCESS",
+            "decision": _dec_map.get(access.get("decision", "ALLOW"), "pass"),
+            "message":  (
+                f"{access.get('reason', 'Access analysis completed.')} "
+                f"(risk={access.get('final_risk', 0):.3f})"
+            ),
+        })
+    
     det = result.get("detection")
     if det:
         logs.append({"stage": "PREDICT", "decision": "pass", "message": f'"{det.get("label", "?")}" at {_pct(det.get("confidence"))}.'})
@@ -641,12 +715,16 @@ def _failure_stage(result: dict):
     reason = (result.get("decision_reason") or "").lower()
     integrity = result.get("integrity") or {}
     detection = result.get("detection") or {}
+    access = result.get("access_analysis") or {}
+
     if not integrity.get("ok", True):
         return "integrity"
     if any(k in reason for k in ("rate limit", "cooldown", "too many", "burst", "bot")):
         return "rate"
     if result.get("validation_message") and result.get("decision_reason") == result.get("validation_message"):
         return "validate"
+    if access.get("decision") == "BLOCK":
+        return "access"
     if detection.get("adversarial"):
         return "adversarial"
     return "decision"

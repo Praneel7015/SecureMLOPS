@@ -59,7 +59,6 @@ def _get_pool():
         return _pool
 
     host     = os.environ.get("DB_HOST")     or cfg.DB_HOST
-    port     = int(os.environ.get("DB_PORT", cfg.DB_PORT))
     dbname   = os.environ.get("DB_NAME")     or cfg.DB_NAME
     user     = os.environ.get("DB_USER")     or cfg.DB_USER
     password = os.environ.get("DB_PASSWORD") or cfg.DB_PASSWORD
@@ -70,6 +69,16 @@ def _get_pool():
 
     try:
         from psycopg2 import pool as pg_pool  # type: ignore
+        raw_port = os.environ.get("DB_PORT")
+        try:
+            port = int(raw_port) if raw_port else int(cfg.DB_PORT)
+        except (TypeError, ValueError):
+            logger.warning(
+                "Invalid DB_PORT=%r; falling back to default port %s.",
+                raw_port,
+                cfg.DB_PORT,
+            )
+            port = int(cfg.DB_PORT)
         _pool = pg_pool.ThreadedConnectionPool(
             minconn=1,
             maxconn=10,

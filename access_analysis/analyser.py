@@ -73,11 +73,16 @@ def _reconstruct_if_needed(user_id: str) -> None:
     )
 
 
-def _parse_iso_timestamp(iso: str) -> float:
-    """Convert ISO-8601 string → Unix epoch float (UTC)."""
+def _parse_iso_timestamp(iso) -> float:
+    """Convert ISO-8601 string or datetime → Unix epoch float (UTC)."""
     from datetime import datetime, timezone
-    dt = datetime.fromisoformat(iso.replace("Z", "+00:00"))
-    return dt.replace(tzinfo=timezone.utc).timestamp()
+    if isinstance(iso, datetime):
+        dt = iso
+    else:
+        dt = datetime.fromisoformat(str(iso).replace("Z", "+00:00"))
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.timestamp()
 
 
 # ── Public API ─────────────────────────────────────────────────────────────────

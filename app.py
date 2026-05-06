@@ -274,7 +274,6 @@ def analyze():
             "ACCESS_BLOCK user=%s risk=%.3f reason=%s",
             username, access_result["final_risk"], access_result["reason"],
         )
-        decision = decide_risk(rate_limited=True)   # reuse BLOCK builder
         result.update(
             status              = "blocked",
             risk_level          = _access_risk_level(access_result["final_risk"]),

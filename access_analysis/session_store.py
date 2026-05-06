@@ -8,13 +8,13 @@ Stores, per user:
   • recent_inputs     : deque[str]     – hashes of the last M inputs
 
 The store is a plain module-level dict – one process, one dict, no external
-dependency.  A Vercel-style serverless deployment with multiple workers will
-use Supabase for cross-worker persistence (see db.py), but within a single
-worker the dict gives zero-latency reads/writes.
+dependency. In a multi-worker/serverless deployment, cross-worker persistence
+is handled by PostgreSQL/RDS (see db.py), while within a single worker the
+dict provides zero-latency reads/writes.
 """
 
 from collections import deque
-from typing import Dict, Deque
+from typing import Dict
 
 from access_analysis.config import SESSION_TIMESTAMP_WINDOW, SESSION_INPUT_WINDOW
 

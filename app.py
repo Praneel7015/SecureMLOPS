@@ -169,7 +169,7 @@ def login():
     if not success:
         if _wants_json():
             return jsonify({"success": False, "message": message}), 401
-        return redirect(url_for("index"))
+        return redirect(url_for("index", login_error=message))
 
     session["user"] = username
     _terminal_logger.info("LOGIN  user=%s ip=%s", username, request.remote_addr)

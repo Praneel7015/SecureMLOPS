@@ -2,7 +2,7 @@
 access_analysis/risk_engine.py
 ────────────────────────────────
 Computes the three behavioural risk signals and combines them into a final
-access_risk score, adjusted by a historical baseline fetched from Supabase.
+access_risk score, adjusted by a historical baseline fetched from PostgreSQL/RDS.
 
 Signal definitions
 ──────────────────

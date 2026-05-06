@@ -110,7 +110,7 @@ pip install -r requirements.txt
 If not, install the main packages manually:
 
 ```powershell
-pip install flask torch torchvision pillow werkzeug
+pip install flask torch torchvision pillow werkzeug psycopg2-binary python-dotenv
 ```
 `.env` File
 

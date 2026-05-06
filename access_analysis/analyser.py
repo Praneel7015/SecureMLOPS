@@ -12,7 +12,7 @@ It orchestrates:
   4. Fetch historical baseline from Supabase
   5. Apply baseline adjustment
   6. Make ALLOW / MONITOR / BLOCK decision
-  7. Persist the log row to Supabase (fire-and-forget: never blocks inference)
+  7. Persist the log row to RDS
 
 Returns a dict that app.py can merge into its result payload.
 """

@@ -41,6 +41,7 @@ CREATE INDEX IF NOT EXISTS idx_security_logs_user_id
 
 import logging
 import os
+import re
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -51,6 +52,21 @@ logger = logging.getLogger("secureml.access.db")
 # ── Lazy connection pool ───────────────────────────────────────────────────────
 
 _pool = None
+_TABLE_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$")
+
+
+def _safe_table_identifier():
+    """
+    Return a safely-quoted SQL identifier for cfg.DB_TABLE, or None if invalid.
+    """
+    table_name = str(cfg.DB_TABLE).strip()
+    if not _TABLE_NAME_RE.match(table_name):
+        logger.error("Invalid DB_TABLE=%r; DB operation disabled for safety.", cfg.DB_TABLE)
+        return None
+
+    from psycopg2 import sql  # type: ignore
+
+    return sql.Identifier(*table_name.split("."))
 
 
 def _get_pool():
@@ -79,6 +95,7 @@ def _get_pool():
                 cfg.DB_PORT,
             )
             port = int(cfg.DB_PORT)
+
         _pool = pg_pool.ThreadedConnectionPool(
             minconn=1,
             maxconn=10,
@@ -121,13 +138,19 @@ def insert_log(
     if pool is None:
         return False
 
-    sql = f"""
-        INSERT INTO {cfg.DB_TABLE}
+    table_ident = _safe_table_identifier()
+    if table_ident is None:
+        return False
+
+    from psycopg2 import sql  # type: ignore
+
+    query = sql.SQL("""
+        INSERT INTO {table}
             (user_id, timestamp, access_risk, final_risk, decision,
              reason, request_type, response_status, input_hash)
         VALUES
             (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-    """
+    """).format(table=table_ident)
     values = (
         user_id,
         datetime.now(timezone.utc),
@@ -144,7 +167,7 @@ def insert_log(
     try:
         conn = pool.getconn()
         with conn.cursor() as cur:
-            cur.execute(sql, values)
+            cur.execute(query, values)
         conn.commit()
         logger.debug("DB insert OK user=%s decision=%s", user_id, decision)
         return True
@@ -169,24 +192,28 @@ def fetch_historical_avg(user_id: str) -> Optional[float]:
     if pool is None:
         return None
 
-    sql = f"""
-        SELECT access_risk
-        FROM   {cfg.DB_TABLE}
+    table_ident = _safe_table_identifier()
+    if table_ident is None:
+        return None
+
+    from psycopg2 import sql  # type: ignore
+
+    query = sql.SQL("""
+        SELECT COUNT(access_risk) AS row_count, AVG(access_risk) AS avg_risk
+        FROM   {table}
         WHERE  user_id = %s
-    """
+    """).format(table=table_ident)
 
     conn = None
     try:
         conn = pool.getconn()
         with conn.cursor() as cur:
-            cur.execute(sql, (user_id,))
-            rows = cur.fetchall()
+            cur.execute(query, (user_id,))
+            row_count, avg_risk = cur.fetchone() or (0, None)
 
-        if len(rows) < cfg.BASELINE_MIN_ROWS:
+        if row_count < cfg.BASELINE_MIN_ROWS:
             return None
-
-        values = [r[0] for r in rows if r[0] is not None]
-        return sum(values) / len(values) if values else None
+        return float(avg_risk) if avg_risk is not None else None
     except Exception as exc:
         logger.error("fetch_historical_avg failed user=%s: %s", user_id, exc)
         return None
@@ -205,19 +232,25 @@ def fetch_recent_logs(user_id: str, limit: int) -> list[dict]:
     if pool is None:
         return []
 
-    sql = f"""
+    table_ident = _safe_table_identifier()
+    if table_ident is None:
+        return []
+
+    from psycopg2 import sql  # type: ignore
+
+    query = sql.SQL("""
         SELECT timestamp, input_hash
-        FROM   {cfg.DB_TABLE}
+        FROM   {table}
         WHERE  user_id = %s
         ORDER  BY timestamp DESC
         LIMIT  %s
-    """
+    """).format(table=table_ident)
 
     conn = None
     try:
         conn = pool.getconn()
         with conn.cursor() as cur:
-            cur.execute(sql, (user_id, limit))
+            cur.execute(query, (user_id, limit))
             rows = cur.fetchall()
             colnames = [desc[0] for desc in cur.description]
 

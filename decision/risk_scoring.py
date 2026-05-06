@@ -65,7 +65,12 @@ def compute_access_risk(auth_failed_or_score) -> float:
 
 
 
-def compute_total_risk(ml_result: dict, rate_limited: bool, auth_failed=False,access_risk:float|None=None,) -> dict:
+def compute_total_risk(
+    ml_result: dict,
+    rate_limited: bool,
+    auth_failed=False,
+    access_risk: float | None = None,
+) -> dict:
     input_risk = compute_input_risk(ml_result)
     traffic_risk = compute_traffic_risk(rate_limited)
     

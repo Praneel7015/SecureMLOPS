@@ -44,3 +44,7 @@ uploads/*
 # Local secrets and overrides
 .env
 .env.*
+
+#Trained models
+mobilenetv3_*.pt
+resnet18_*.pt

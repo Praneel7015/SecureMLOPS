@@ -1,0 +1,45 @@
+{
+  "datasets": {
+    "1eed7b96ba7049c6854b71ce45f47e4a": {
+      "class_distribution": {
+        "cat": 30,
+        "dog": 30
+      },
+      "class_names": [
+        "cat",
+        "dog"
+      ],
+      "created_at": "2026-05-10T17:31:02.025827+00:00",
+      "dataset_dir": "E:\\MSRIT\\SEM-6\\mini_project\\SecureMLOPS\\uploads\\datasets\\1eed7b96ba7049c6854b71ce45f47e4a\\dataset",
+      "dataset_id": "1eed7b96ba7049c6854b71ce45f47e4a",
+      "image_count": 60,
+      "source_name": "dataset.zip"
+    },
+    "3fe38d41ed534408840b7e332571f462": {
+      "class_names": [
+        "cat",
+        "dog"
+      ],
+      "created_at": "2026-05-09T08:58:13.816513+00:00",
+      "dataset_dir": "E:\\MSRIT\\SEM-6\\mini_project\\SecureMLOPS\\uploads\\datasets\\3fe38d41ed534408840b7e332571f462\\dataset",
+      "dataset_id": "3fe38d41ed534408840b7e332571f462",
+      "image_count": 60,
+      "source_name": "dataset.zip"
+    },
+    "f8c1a41171ad4dfbb1d70b1a88462eaf": {
+      "class_distribution": {
+        "cat": 30,
+        "dog": 30
+      },
+      "class_names": [
+        "cat",
+        "dog"
+      ],
+      "created_at": "2026-05-09T10:01:59.860948+00:00",
+      "dataset_dir": "E:\\MSRIT\\SEM-6\\mini_project\\SecureMLOPS\\uploads\\datasets\\f8c1a41171ad4dfbb1d70b1a88462eaf\\dataset",
+      "dataset_id": "f8c1a41171ad4dfbb1d70b1a88462eaf",
+      "image_count": 60,
+      "source_name": "dataset.zip"
+    }
+  }
+}

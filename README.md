@@ -1,40 +1,151 @@
-# Secure ML Inference System
+# Secure MLOps Platform
 
-This project is a secure machine learning inference application built around an image classification pipeline. It combines a pretrained EfficientNet-B0 model with multiple security checks so the system does not blindly return predictions for unsafe or suspicious inputs.
+SecureMLOPS is a modular Flask + React platform for secure image inference **and** model training. It combines a hardened security pipeline (authentication, rate limiting, integrity verification, anomaly/adversarial detection, access analysis, and risk scoring) with a production-style training workflow that supports dataset validation, background training jobs, and model registry management.
 
-The app includes a Flask-based dashboard that shows the full staged pipeline visually, from authentication to the final risk decision. Users can choose default images from the local `images/` directory or upload their own image and then see exactly how the system processed the request.
+## Core Features
 
-## What The Project Does
+- Secure image inference with full security pipeline visibility
+- Optional custom model uploads validated before inference
+- Dataset ZIP validation with ZIP Slip protection
+- Background training jobs with live progress polling
+- Model registry with downloadable checkpoints
+- Detailed audit logs and risk decisions
 
-The system runs an image through these stages:
+## Architecture Overview
 
-1. Authentication
-2. Rate limiting
-3. Input validation
-4. Preprocessing
-5. Model integrity verification
-6. Initial AI prediction
-7. Anomaly detection
-8. Adversarial detection
-9. Risk decision engine
+Backend modules are separated by responsibility:
 
-Depending on the security signals, the request is either:
+- `app.py`: Flask routes + security pipeline integration
+- `Detection/`: inference, preprocessing, anomaly/adversarial checks
+- `training/`: dataset validation, model factory, trainer, job manager, exporters
+- `access_analysis/`: behavioral risk scoring and persistence
 
-- `allowed`
-- `allowed_with_warning`
-- `blocked`
+Frontend structure mirrors the backend workflow:
 
-## Main Features
+- **Dashboard**: overview of datasets, jobs, and models
+- **Inference**: upload image + optional model, view pipeline output
+- **Training**: upload dataset, configure jobs, track progress, download models
 
-- Secure image upload flow with file validation
-- Built-in sample image gallery from the `images/` folder
-- EfficientNet-B0 image classification using torchvision pretrained weights
-- Statistical anomaly detection based on confidence, entropy, and prediction margin
-- Adversarial detection using FGSM sensitivity and transform stability checks
-- Rate limiting for repeated requests
-- File and model-weight integrity verification
-- Audit-style staged pipeline output in the web UI
-- Security event logging
+## Dataset ZIP Format
+
+```
+dataset.zip
+└── dataset/
+        ├── cat/
+        ├── dog/
+        └── classes.json
+```
+
+`classes.json` must match the folder names:
+
+```json
+{
+    "classes": ["cat", "dog"]
+}
+```
+
+Supported image formats: `.jpg`, `.jpeg`, `.png`.
+
+Example ZIP layout: see `examples/dataset/README.md`.
+
+## Supported Training Models
+
+- ResNet18
+- EfficientNet-B0
+- MobileNetV3 (large)
+
+Each checkpoint includes:
+
+```json
+{
+    "model_state_dict": "...",
+    "class_names": ["cat", "dog"],
+    "model_type": "resnet18",
+    "image_size": 224,
+    "num_classes": 2,
+    "metrics": {"final_val_accuracy": 0.92},
+    "created_at": "2026-05-08T12:00:00Z"
+}
+```
+
+## Setup
+
+### Backend
+
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+### Frontend
+
+```powershell
+Set-Location -LiteralPath .\frontend
+npm install
+Set-Location -LiteralPath ..
+```
+
+## Running the App
+
+### Option A: Flask serves the built React app
+
+```powershell
+Set-Location -LiteralPath .\frontend
+npm run build
+Set-Location -LiteralPath ..
+python app.py
+```
+
+Open: `http://127.0.0.1:5000`
+
+### Option B: React dev server + Flask API
+
+Terminal 1:
+
+```powershell
+python app.py
+```
+
+Terminal 2:
+
+```powershell
+Set-Location -LiteralPath .\frontend
+npm run dev
+```
+
+Dev URL: `http://127.0.0.1:5173`
+
+## Example Training Flow
+
+1. Upload `dataset.zip` in the Training tab.
+2. Choose model type, epochs, batch size, and learning rate.
+3. Start training; progress updates via polling.
+4. Download the exported `.pt` checkpoint from the Model Registry.
+
+## Example Inference Flow
+
+1. Upload an image (or select a sample).
+2. Optionally upload a trained `.pt` checkpoint.
+3. Review security pipeline results, prediction, and risk decision.
+
+## Security Validation Notes
+
+- ZIP extraction uses safe path checks to prevent ZIP Slip.
+- `classes.json` must match dataset folder names.
+- Uploaded checkpoints are validated before loading and must include required metadata.
+- Only ResNet18, EfficientNet-B0, and MobileNetV3 checkpoints are accepted.
+
+## Tests
+
+```powershell
+pytest
+```
+
+## Additional Docs
+
+- `steps.md` - End-to-end command checklist for setup, run, and validation.
+- `summary.md` - High-level project summary and architecture notes.
 
 ## Project Structure
 
@@ -95,7 +206,7 @@ Set-Location -LiteralPath .\SecureMLOPS
 ### 2. Create and activate Python virtual environment
 
 ```powershell
-python -m venv .venv
+py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
@@ -146,7 +257,7 @@ Build the React app first:
 
 ```powershell
 Set-Location -LiteralPath .\frontend
-npm run build
+npm run dev
 Set-Location -LiteralPath ..
 ```
 

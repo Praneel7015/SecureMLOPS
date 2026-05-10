@@ -23,7 +23,7 @@ export function Settings({ username, onLogout, onBack }: SettingsProps) {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    setSaveMessage('Settings saved locally (dummy persistence). You can wire this to your real endpoint later.');
+    setSaveMessage('Settings updates are not yet connected to a backend service.');
   };
 
   return (
@@ -59,8 +59,12 @@ export function Settings({ username, onLogout, onBack }: SettingsProps) {
       {/* Settings Form */}
       <div className="max-w-6xl mx-auto px-6 py-8">
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Grid Layout for Settings Cards */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="rounded-lg border border-warning/20 bg-warning/10 px-4 py-3 text-warning">
+            Settings are displayed for preview only. Editing and persistence are not implemented yet.
+          </div>
+          <fieldset disabled className="space-y-6">
+            {/* Grid Layout for Settings Cards */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* General Settings */}
             <div className="bg-card rounded-lg border border-border p-6">
               <div className="flex items-center gap-3 mb-6">
@@ -321,6 +325,8 @@ export function Settings({ username, onLogout, onBack }: SettingsProps) {
             </div>
           </div>
 
+          </fieldset>
+
           {/* Save Button */}
           <div className="flex justify-end gap-4">
             <button
@@ -332,7 +338,8 @@ export function Settings({ username, onLogout, onBack }: SettingsProps) {
             </button>
             <button
               type="submit"
-              className="flex items-center gap-2 px-6 py-3 bg-accent hover:bg-accent-600 text-accent-foreground rounded-lg transition-colors"
+              disabled
+              className="flex items-center gap-2 px-6 py-3 bg-muted text-muted-foreground rounded-lg"
             >
               <Save className="w-5 h-5" />
               <span>Save Settings</span>

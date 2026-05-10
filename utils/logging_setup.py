@@ -19,6 +19,10 @@ def log_security_event(username, result):
         "risk_level": result.get("risk_level"),
         "decision_reason": result.get("decision_reason"),
         "prediction": result.get("prediction"),
+        "model_source": result.get("model_source"),
+        "model_name": result.get("model_name"),
+        "model_type": result.get("model_type"),
+        "checkpoint_loaded": result.get("checkpoint_loaded"),
         "timestamp": result.get("timestamp"),
         "filename": result.get("filename"),
     }

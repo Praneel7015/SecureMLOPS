@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Login } from './components/Login';
 import { Dashboard } from './components/Dashboard';
 import { Settings } from './components/Settings';
-import { apiBootstrap, apiLogin, apiLogout, SampleImage } from './api';
+import { apiBootstrap, apiLogin, apiLogout, SampleImage, SupportedModel } from './api';
 
 type View = 'loading' | 'login' | 'dashboard' | 'settings';
 
@@ -10,6 +10,9 @@ export default function App() {
   const [currentView, setCurrentView] = useState<View>('loading');
   const [username, setUsername] = useState<string | null>(null);
   const [sampleImages, setSampleImages] = useState<SampleImage[]>([]);
+  const [supportedModels, setSupportedModels] = useState<SupportedModel[]>([]);
+  const [maxDatasetUploadMb, setMaxDatasetUploadMb] = useState(600);
+  const [maxModelUploadMb, setMaxModelUploadMb] = useState(200);
   const [appError, setAppError] = useState<string>('');
 
   useEffect(() => {
@@ -27,6 +30,9 @@ export default function App() {
       const boot = await apiBootstrap();
       setSampleImages(boot.sample_images || []);
       setUsername(boot.username);
+  setSupportedModels(boot.supported_models || []);
+  setMaxDatasetUploadMb(boot.max_dataset_upload_mb || 600);
+  setMaxModelUploadMb(boot.max_model_upload_mb || 200);
       setCurrentView(boot.authenticated ? 'dashboard' : 'login');
       setAppError('');
     } catch (_error) {
@@ -86,6 +92,9 @@ export default function App() {
         <Dashboard
           username={username || 'user'}
           sampleImages={sampleImages}
+          supportedModels={supportedModels}
+          maxDatasetUploadMb={maxDatasetUploadMb}
+          maxModelUploadMb={maxModelUploadMb}
           onLogout={handleLogout}
           onNavigateToSettings={handleNavigateToSettings}
         />

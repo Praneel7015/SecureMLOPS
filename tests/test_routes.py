@@ -68,6 +68,24 @@ class TestAnalyzeRoute:
         assert response.status_code in [200, 302]
 
 
+class TestApiBootstrap:
+    def test_bootstrap_returns_json(self, client):
+        response = client.get("/api/bootstrap")
+        assert response.status_code == 200
+        payload = response.get_json()
+        assert "supported_models" in payload
+
+
+class TestTrainingApiRoutes:
+    def test_training_dataset_requires_login(self, client):
+        response = client.get("/api/training/datasets")
+        assert response.status_code in [401, 302]
+
+    def test_training_models_requires_login(self, client):
+        response = client.get("/api/training/models")
+        assert response.status_code in [401, 302]
+
+
 class TestStaticRoutes:
     def test_static_css_exists(self, client):
         response = client.get("/static/style.css")

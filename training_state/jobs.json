@@ -1,0 +1,412 @@
+{
+  "jobs": {
+    "1d75fe4938a047c092c007b2ab516680": {
+      "config": {
+        "batch_size": 16,
+        "epochs": 7,
+        "freeze_backbone": true,
+        "learning_rate": 0.001,
+        "model_type": "mobilenetv3",
+        "seed": 42
+      },
+      "created_at": "2026-05-10T17:38:49.962875+00:00",
+      "current_epoch": 7,
+      "dataset_id": "f8c1a41171ad4dfbb1d70b1a88462eaf",
+      "epochs": 7,
+      "error": null,
+      "job_id": "1d75fe4938a047c092c007b2ab516680",
+      "logs": [
+        {
+          "message": "Training job started.",
+          "timestamp": "2026-05-10T17:38:50.017869+00:00"
+        },
+        {
+          "message": "Epoch 1/7 - train_loss=0.6420 val_loss=0.4390 train_acc=0.5833 val_acc=0.9167",
+          "timestamp": "2026-05-10T17:38:57.392780+00:00"
+        },
+        {
+          "message": "Epoch 2/7 - train_loss=0.2085 val_loss=0.4804 train_acc=0.9583 val_acc=0.8333",
+          "timestamp": "2026-05-10T17:38:59.785490+00:00"
+        },
+        {
+          "message": "Epoch 3/7 - train_loss=0.1293 val_loss=0.2144 train_acc=0.9583 val_acc=1.0000",
+          "timestamp": "2026-05-10T17:39:02.025031+00:00"
+        },
+        {
+          "message": "Epoch 4/7 - train_loss=0.0605 val_loss=0.0796 train_acc=1.0000 val_acc=1.0000",
+          "timestamp": "2026-05-10T17:39:04.256118+00:00"
+        },
+        {
+          "message": "Epoch 5/7 - train_loss=0.0335 val_loss=0.0582 train_acc=1.0000 val_acc=1.0000",
+          "timestamp": "2026-05-10T17:39:06.490214+00:00"
+        },
+        {
+          "message": "Epoch 6/7 - train_loss=0.0115 val_loss=0.0506 train_acc=1.0000 val_acc=1.0000",
+          "timestamp": "2026-05-10T17:39:08.951209+00:00"
+        },
+        {
+          "message": "Epoch 7/7 - train_loss=0.0098 val_loss=0.0555 train_acc=1.0000 val_acc=1.0000",
+          "timestamp": "2026-05-10T17:39:11.274111+00:00"
+        },
+        {
+          "message": "Training completed successfully.",
+          "timestamp": "2026-05-10T17:39:11.480133+00:00"
+        }
+      ],
+      "metrics": {
+        "class_names": [
+          "cat",
+          "dog"
+        ],
+        "confusion_matrix": [
+          [
+            10,
+            0
+          ],
+          [
+            0,
+            2
+          ]
+        ],
+        "epoch_durations": [
+          5.773225700017065,
+          2.3576693999930285,
+          2.190463400038425,
+          2.183551699970849,
+          2.203764299978502,
+          2.4283952999976464,
+          2.2913932999945246
+        ],
+        "f1": [
+          0.8736842105263158,
+          0.7777777777777778,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "per_class_accuracy": {
+          "cat": 1.0,
+          "dog": 1.0
+        },
+        "precision": [
+          0.8333333333333333,
+          0.75,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "recall": [
+          0.95,
+          0.9,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "train_accuracy": [
+          0.5833333333333334,
+          0.9583333333333334,
+          0.9583333333333334,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "train_loss": [
+          0.6420371135075887,
+          0.20845496654510498,
+          0.12926618630687395,
+          0.06054357377191385,
+          0.03354816076656183,
+          0.011464486209054789,
+          0.009846038029839596
+        ],
+        "val_accuracy": [
+          0.9166666666666666,
+          0.8333333333333334,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "val_loss": [
+          0.43901002407073975,
+          0.48042047023773193,
+          0.21439717710018158,
+          0.07957758754491806,
+          0.058156389743089676,
+          0.05063541606068611,
+          0.055471088737249374
+        ]
+      },
+      "model_id": "09109b60b61a48939fc51c2b52633df2",
+      "progress": 100.0,
+      "status": "completed",
+      "updated_at": "2026-05-10T17:39:11.480133+00:00"
+    },
+    "9f7229c04b464a1bb199532cb4d49cd0": {
+      "config": {
+        "batch_size": 16,
+        "epochs": 5,
+        "freeze_backbone": true,
+        "learning_rate": 0.001001,
+        "model_type": "mobilenetv3",
+        "seed": 42
+      },
+      "created_at": "2026-05-09T08:59:14.187573+00:00",
+      "current_epoch": 5,
+      "dataset_id": "3fe38d41ed534408840b7e332571f462",
+      "epochs": 5,
+      "error": null,
+      "job_id": "9f7229c04b464a1bb199532cb4d49cd0",
+      "logs": [
+        {
+          "message": "Training job started.",
+          "timestamp": "2026-05-09T08:59:14.227605+00:00"
+        },
+        {
+          "message": "Epoch 1/5 - loss=0.6131 val_acc=1.0000",
+          "timestamp": "2026-05-09T08:59:26.412368+00:00"
+        },
+        {
+          "message": "Epoch 2/5 - loss=0.2088 val_acc=1.0000",
+          "timestamp": "2026-05-09T08:59:28.582967+00:00"
+        },
+        {
+          "message": "Epoch 3/5 - loss=0.1035 val_acc=1.0000",
+          "timestamp": "2026-05-09T08:59:32.563745+00:00"
+        },
+        {
+          "message": "Epoch 4/5 - loss=0.0335 val_acc=1.0000",
+          "timestamp": "2026-05-09T08:59:35.282283+00:00"
+        },
+        {
+          "message": "Epoch 5/5 - loss=0.0129 val_acc=1.0000",
+          "timestamp": "2026-05-09T08:59:38.064599+00:00"
+        },
+        {
+          "message": "Training completed successfully.",
+          "timestamp": "2026-05-09T08:59:38.218465+00:00"
+        }
+      ],
+      "metrics": {
+        "train_loss": [
+          0.6130522390206655,
+          0.2088093807299932,
+          0.1035482386747996,
+          0.0335456325362126,
+          0.012883475981652737
+        ],
+        "val_accuracy": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "model_id": "65f895fc51c04279a9a648256ce52d5a",
+      "progress": 100.0,
+      "status": "completed",
+      "updated_at": "2026-05-09T08:59:38.218465+00:00"
+    },
+    "a9a8474de2a24addb8ea580287b2f97f": {
+      "config": {
+        "batch_size": 16,
+        "epochs": 5,
+        "freeze_backbone": true,
+        "learning_rate": 0.001001,
+        "model_type": "resnet18",
+        "seed": 42
+      },
+      "created_at": "2026-05-09T08:58:26.949864+00:00",
+      "current_epoch": 5,
+      "dataset_id": "3fe38d41ed534408840b7e332571f462",
+      "epochs": 5,
+      "error": null,
+      "job_id": "a9a8474de2a24addb8ea580287b2f97f",
+      "logs": [
+        {
+          "message": "Training job started.",
+          "timestamp": "2026-05-09T08:58:27.051807+00:00"
+        },
+        {
+          "message": "Epoch 1/5 - loss=0.5850 val_acc=0.9167",
+          "timestamp": "2026-05-09T08:58:35.165606+00:00"
+        },
+        {
+          "message": "Epoch 2/5 - loss=0.4615 val_acc=1.0000",
+          "timestamp": "2026-05-09T08:58:38.548522+00:00"
+        },
+        {
+          "message": "Epoch 3/5 - loss=0.3570 val_acc=1.0000",
+          "timestamp": "2026-05-09T08:58:42.103758+00:00"
+        },
+        {
+          "message": "Epoch 4/5 - loss=0.3069 val_acc=1.0000",
+          "timestamp": "2026-05-09T08:58:45.502692+00:00"
+        },
+        {
+          "message": "Epoch 5/5 - loss=0.2459 val_acc=1.0000",
+          "timestamp": "2026-05-09T08:58:49.152090+00:00"
+        },
+        {
+          "message": "Training completed successfully.",
+          "timestamp": "2026-05-09T08:58:49.432814+00:00"
+        }
+      ],
+      "metrics": {
+        "train_loss": [
+          0.5850085814793905,
+          0.4614773094654083,
+          0.3569968640804291,
+          0.3069477578004201,
+          0.2459370493888855
+        ],
+        "val_accuracy": [
+          0.9166666666666666,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "model_id": "552980ba68d14e29b209acaa649bc0fa",
+      "progress": 100.0,
+      "status": "completed",
+      "updated_at": "2026-05-09T08:58:49.432814+00:00"
+    },
+    "bfcc95947c764994bdbd8aba3b1957eb": {
+      "config": {
+        "batch_size": 16,
+        "epochs": 5,
+        "freeze_backbone": true,
+        "learning_rate": 0.001001,
+        "model_type": "resnet18",
+        "seed": 42
+      },
+      "created_at": "2026-05-09T10:02:17.061599+00:00",
+      "current_epoch": 5,
+      "dataset_id": "f8c1a41171ad4dfbb1d70b1a88462eaf",
+      "epochs": 5,
+      "error": null,
+      "job_id": "bfcc95947c764994bdbd8aba3b1957eb",
+      "logs": [
+        {
+          "message": "Training job started.",
+          "timestamp": "2026-05-09T10:02:17.117622+00:00"
+        },
+        {
+          "message": "Epoch 1/5 - train_loss=0.7365 val_loss=0.5563 train_acc=0.5000 val_acc=0.7500",
+          "timestamp": "2026-05-09T10:02:23.041584+00:00"
+        },
+        {
+          "message": "Epoch 2/5 - train_loss=0.5607 val_loss=0.6462 train_acc=0.7083 val_acc=0.7500",
+          "timestamp": "2026-05-09T10:02:26.958205+00:00"
+        },
+        {
+          "message": "Epoch 3/5 - train_loss=0.4913 val_loss=0.5416 train_acc=0.7708 val_acc=0.7500",
+          "timestamp": "2026-05-09T10:02:31.374186+00:00"
+        },
+        {
+          "message": "Epoch 4/5 - train_loss=0.3813 val_loss=0.3280 train_acc=0.8333 val_acc=1.0000",
+          "timestamp": "2026-05-09T10:02:35.489556+00:00"
+        },
+        {
+          "message": "Epoch 5/5 - train_loss=0.4099 val_loss=0.2269 train_acc=0.8333 val_acc=0.9167",
+          "timestamp": "2026-05-09T10:02:39.157732+00:00"
+        },
+        {
+          "message": "Training completed successfully.",
+          "timestamp": "2026-05-09T10:02:39.417734+00:00"
+        }
+      ],
+      "metrics": {
+        "class_names": [
+          "cat",
+          "dog"
+        ],
+        "confusion_matrix": [
+          [
+            10,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ],
+        "epoch_durations": [
+          5.51079140001093,
+          3.881383200001437,
+          4.389096700004302,
+          4.077439700020477,
+          3.657035400014138
+        ],
+        "f1": [
+          0.4285714285714286,
+          0.6974789915966386,
+          0.6974789915966386,
+          1.0,
+          0.8095238095238095
+        ],
+        "per_class_accuracy": {
+          "cat": 1.0,
+          "dog": 0.5
+        },
+        "precision": [
+          0.4090909090909091,
+          0.7,
+          0.7,
+          1.0,
+          0.9545454545454546
+        ],
+        "recall": [
+          0.45,
+          0.85,
+          0.85,
+          1.0,
+          0.75
+        ],
+        "train_accuracy": [
+          0.5,
+          0.7083333333333334,
+          0.7708333333333334,
+          0.8333333333333334,
+          0.8333333333333334
+        ],
+        "train_loss": [
+          0.7365146080652872,
+          0.5606576402982076,
+          0.4913015862305959,
+          0.3812628189722697,
+          0.40987199544906616
+        ],
+        "val_accuracy": [
+          0.75,
+          0.75,
+          0.75,
+          1.0,
+          0.9166666666666666
+        ],
+        "val_loss": [
+          0.5563448071479797,
+          0.6461910605430603,
+          0.541572630405426,
+          0.3280143737792969,
+          0.22689418494701385
+        ]
+      },
+      "model_id": "4bf48016bc6b4554811fb3913323e463",
+      "progress": 100.0,
+      "status": "completed",
+      "updated_at": "2026-05-09T10:02:39.417734+00:00"
+    }
+  }
+}

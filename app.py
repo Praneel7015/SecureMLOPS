@@ -1,19 +1,28 @@
+import json
 import logging
 import os
 import shutil
 import time
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
 from dotenv import load_dotenv
 load_dotenv()
 
-from flask import Flask, flash, g, redirect, render_template, request, send_from_directory, session, url_for
+from flask import Flask, flash, g, redirect, render_template, request, send_from_directory, session, url_for, jsonify
 from werkzeug.utils import secure_filename
 
 from auth.auth_service import authenticate_user
+from core.runtime import get_device
+from Detection.custom_pipeline import process_custom_image
 from decision.engine import decide_risk
 from rate_limit.service import RateLimiter
+from training.config import MAX_DATASET_UPLOAD_BYTES, MAX_MODEL_UPLOAD_BYTES, SUPPORTED_MODELS
+from training.job_manager import bootstrap_job_manager, submit_training_job
+from training.model_factory import load_model_from_checkpoint
+from training.registry import get_dataset, get_model, list_datasets, list_models, save_dataset_metadata
+from training.validator import safe_load_checkpoint, validate_dataset_zip, validate_training_config
 from utils.logging_setup import configure_logging, log_security_event
 from validation.image_validator import validate_image_path, validate_image_upload
 
@@ -22,7 +31,10 @@ from access_analysis import analyse_request
 
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_DIR = BASE_DIR / "uploads"
+DATASET_UPLOAD_DIR = UPLOAD_DIR / "datasets"
+MODEL_UPLOAD_DIR = UPLOAD_DIR / "models"
 IMAGE_DIR = BASE_DIR / "images"
+MAX_IMAGE_UPLOAD_BYTES = 5 * 1024 * 1024
 _REACT_DIST_CANDIDATES = [
     BASE_DIR / "frontend" / "dist",
     BASE_DIR / "Design SecureMLOPS UI" / "dist",  # legacy folder name fallback
@@ -30,14 +42,17 @@ _REACT_DIST_CANDIDATES = [
 REACT_DIST_DIR = next((p for p in _REACT_DIST_CANDIDATES if p.exists()), _REACT_DIST_CANDIDATES[0])
 REACT_ASSETS_DIR = REACT_DIST_DIR / "assets"
 UPLOAD_DIR.mkdir(exist_ok=True)
+DATASET_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+MODEL_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("APP_SECRET_KEY", "mini-project-secret-key")
-app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
+app.config["MAX_CONTENT_LENGTH"] = MAX_DATASET_UPLOAD_BYTES
 app.config["UPLOAD_FOLDER"] = str(UPLOAD_DIR)
 
 rate_limiter = RateLimiter()
 configure_logging(BASE_DIR / "logs" / "security.log")
+bootstrap_job_manager()
 
 # ── Terminal colour helpers ───────────────────────────────────────────────────
 
@@ -156,7 +171,12 @@ def api_bootstrap():
             "authenticated": bool(username),
             "username": username,
             "sample_images": list_sample_images(),
-            "max_upload_size_mb": 5,
+            "max_upload_size_mb": MAX_IMAGE_UPLOAD_BYTES // (1024 * 1024),
+            "max_dataset_upload_mb": MAX_DATASET_UPLOAD_BYTES // (1024 * 1024),
+            "max_model_upload_mb": MAX_MODEL_UPLOAD_BYTES // (1024 * 1024),
+            "supported_models": [
+                {"id": key, "label": value["label"]} for key, value in SUPPORTED_MODELS.items()
+            ],
         }
     )
 
@@ -182,6 +202,162 @@ def login():
     if _wants_json():
         return jsonify({"success": True, "message": "Login successful.", "username": username})
     return redirect(url_for("index"))
+
+
+@app.route("/api/inference", methods=["POST"])
+def api_inference():
+    return analyze()
+
+
+@app.route("/api/training/datasets", methods=["POST"])
+def api_training_dataset_upload():
+    username = session.get("user")
+    if not username:
+        return jsonify({"success": False, "message": "Please log in to upload datasets."}), 401
+
+    rate_state = rate_limiter.check(username, request.remote_addr or "local", mode="training")
+    if not rate_state["allowed"]:
+        return jsonify({"success": False, "message": rate_state["message"]}), 429
+
+    dataset_file = request.files.get("dataset")
+    if not dataset_file or not dataset_file.filename:
+        return jsonify({"success": False, "message": "Dataset ZIP is required."}), 400
+
+    access_result = analyse_request(
+        user_id=username,
+        input_identifier=dataset_file.filename,
+        request_type="training",
+        response_status="200",
+    )
+    if not access_result["allowed"]:
+        return jsonify({"success": False, "message": access_result["reason"]}), 403
+
+    dataset_id = uuid.uuid4().hex
+    dataset_dir = DATASET_UPLOAD_DIR / dataset_id
+    dataset_dir.mkdir(parents=True, exist_ok=True)
+    zip_path = dataset_dir / secure_filename(dataset_file.filename)
+    dataset_file.save(zip_path)
+
+    validation = validate_dataset_zip(zip_path, dataset_dir)
+    if not validation.ok:
+        shutil.rmtree(dataset_dir, ignore_errors=True)
+        return jsonify({"success": False, "message": validation.message}), 400
+
+    metadata = {
+        "dataset_dir": str(validation.dataset_dir),
+        "class_names": validation.class_names,
+        "image_count": validation.image_count,
+        "class_distribution": validation.class_distribution,
+        "source_name": dataset_file.filename,
+    }
+    record = save_dataset_metadata(dataset_id, metadata)
+    zip_path.unlink(missing_ok=True)
+
+    return jsonify(
+        {
+            "success": True,
+            "message": "Dataset uploaded and validated.",
+            "dataset": record,
+        }
+    )
+
+
+@app.route("/api/training/datasets", methods=["GET"])
+def api_training_dataset_list():
+    username = session.get("user")
+    if not username:
+        return jsonify({"success": False, "message": "Please log in to view datasets."}), 401
+    return jsonify({"success": True, "datasets": list_datasets()})
+
+
+@app.route("/api/training/start", methods=["POST"])
+def api_training_start():
+    username = session.get("user")
+    if not username:
+        return jsonify({"success": False, "message": "Please log in to start training."}), 401
+
+    rate_state = rate_limiter.check(username, request.remote_addr or "local", mode="training")
+    if not rate_state["allowed"]:
+        return jsonify({"success": False, "message": rate_state["message"]}), 429
+
+    payload = request.get_json(silent=True) or {}
+    dataset_id = str(payload.get("dataset_id", "")).strip()
+    if not dataset_id:
+        return jsonify({"success": False, "message": "dataset_id is required."}), 400
+
+    dataset = get_dataset(dataset_id)
+    if not dataset:
+        return jsonify({"success": False, "message": "Dataset not found."}), 404
+
+    access_result = analyse_request(
+        user_id=username,
+        input_identifier=f"training:{dataset_id}",
+        request_type="training",
+        response_status="200",
+    )
+    if not access_result["allowed"]:
+        return jsonify({"success": False, "message": access_result["reason"]}), 403
+
+    ok, message, cleaned = validate_training_config(payload)
+    if not ok:
+        return jsonify({"success": False, "message": message}), 400
+
+    dataset_dir = dataset.get("dataset_dir")
+    if not dataset_dir or not Path(dataset_dir).exists():
+        return jsonify({"success": False, "message": "Dataset directory missing."}), 400
+
+    try:
+        job = submit_training_job(dataset_id, dataset_dir, cleaned)
+    except RuntimeError as exc:
+        return jsonify({"success": False, "message": str(exc)}), 429
+
+    return jsonify({"success": True, "job": job})
+
+
+@app.route("/api/training/jobs", methods=["GET"])
+def api_training_jobs():
+    username = session.get("user")
+    if not username:
+        return jsonify({"success": False, "message": "Please log in to view jobs."}), 401
+    from training.progress_tracker import list_jobs
+    return jsonify({"success": True, "jobs": list_jobs()})
+
+
+@app.route("/api/training/jobs/<job_id>", methods=["GET"])
+def api_training_job_status(job_id: str):
+    username = session.get("user")
+    if not username:
+        return jsonify({"success": False, "message": "Please log in to view jobs."}), 401
+    from training.progress_tracker import get_job
+    job = get_job(job_id)
+    if not job:
+        return jsonify({"success": False, "message": "Job not found."}), 404
+    return jsonify({"success": True, "job": job})
+
+
+@app.route("/api/training/models", methods=["GET"])
+def api_training_models():
+    username = session.get("user")
+    if not username:
+        return jsonify({"success": False, "message": "Please log in to view models."}), 401
+    return jsonify({"success": True, "models": list_models()})
+
+
+@app.route("/api/training/models/<model_id>/download", methods=["GET"])
+def api_training_model_download(model_id: str):
+    username = session.get("user")
+    if not username:
+        return jsonify({"success": False, "message": "Please log in to download models."}), 401
+
+    model = get_model(model_id)
+    if not model:
+        return jsonify({"success": False, "message": "Model not found."}), 404
+
+    file_path = Path(model.get("file_path", ""))
+    if not file_path.exists():
+        return jsonify({"success": False, "message": "Model file missing."}), 404
+
+    return send_from_directory(str(file_path.parent), file_path.name, as_attachment=True)
 
 
 @app.route("/logout", methods=["POST"])
@@ -254,16 +430,17 @@ def analyze():
 
     # ── Input validation ──────────────────────────────────────────────────────
     uploaded_file = request.files.get("image")
+    uploaded_model = request.files.get("model")
     selected_sample = request.form.get("sample_image", "").strip()
     selected_image_url = None
 
     if uploaded_file and uploaded_file.filename:
-        is_valid, validation_message = validate_image_upload(uploaded_file, app.config["MAX_CONTENT_LENGTH"])
+        is_valid, validation_message = validate_image_upload(uploaded_file, MAX_IMAGE_UPLOAD_BYTES)
         input_identifier = uploaded_file.filename
     elif selected_sample:
         sample_path = _safe_sample(selected_sample)
         is_valid, validation_message = (
-            validate_image_path(sample_path, app.config["MAX_CONTENT_LENGTH"])
+            validate_image_path(sample_path, MAX_IMAGE_UPLOAD_BYTES)
             if sample_path
             else (False, "Selected sample image is invalid.")
         )
@@ -366,6 +543,38 @@ def analyze():
             sample_images=sample_images,
             selected_sample=selected_sample or None,
         )
+    # ── Optional custom model validation ───────────────────────────────────
+    custom_model = None
+    model_meta = None
+    model_path = None
+    if uploaded_model and uploaded_model.filename:
+        custom_model, model_meta, model_error, model_path = _load_custom_model(uploaded_model)
+        if model_error:
+            _terminal_logger.warning("MODEL_VALIDATE_FAIL user=%s reason=%s", username, model_error)
+            decision = decide_risk(validation_error=model_error)
+            result.update(
+                status=decision["status"],
+                risk_level=decision["risk_level"],
+                decision_reason=model_error,
+                rate_limit_message=rate_state["message"],
+                validation_message=model_error,
+                integrity=integrity,
+                access_analysis=access_result,
+            )
+            _finalise(result)
+            log_security_event(username, result)
+            if wants_json:
+                return jsonify(
+                    {
+                        "success": False,
+                        "message": model_error,
+                        "result": result,
+                        "selected_image_url": _sample_url(selected_sample),
+                        "sample_images": sample_images,
+                        "selected_sample": selected_sample or None,
+                    }
+                ), 400
+            return redirect(url_for("index"))
     # ── Save file ─────────────────────────────────────────────────────────────
     ts = datetime.now().strftime("%Y%m%d%H%M%S")
     if uploaded_file and uploaded_file.filename:
@@ -381,10 +590,63 @@ def analyze():
         selected_image_url = url_for("sample_image", filename=sample_path.name)
 
     # ── ML pipeline ───────────────────────────────────────────────────────────
+    model_source = "default"
+    model_type = "efficientnet-b0"
+    model_name = "EfficientNet-B0"
+    model_info = {
+        "model_source": "default",
+        "model_name": "EfficientNet-B0",
+        "model_type": "EfficientNet-B0",
+        "checkpoint_loaded": True,
+        "class_names": _default_class_names(),
+        "num_classes": 1000,
+        "model_created_at": None,
+        "reconstruction_status": "default_loaded",
+    }
     try:
-        from Detection.ml_pipeline import process_image
+        if custom_model is not None and model_meta is not None:
+            model_source = "uploaded"
+            model_type = model_meta["model_type"]
+            model_name = model_meta.get("model_name", model_type)
+            model_info = {
+                "model_source": "uploaded",
+                "model_name": model_name,
+                "model_type": model_type,
+                "checkpoint_loaded": bool(model_meta.get("checkpoint_loaded")),
+                "class_names": model_meta.get("class_names"),
+                "num_classes": model_meta.get("num_classes"),
+                "model_created_at": model_meta.get("created_at"),
+                "reconstruction_status": "success",
+            }
+            _terminal_logger.info(
+                "MODEL_LOAD user=%s source=uploaded name=%s type=%s classes=%s",
+                username,
+                model_name,
+                model_type,
+                model_meta.get("num_classes"),
+            )
+            _terminal_logger.info("INFERENCE user=%s file=%s model=%s", username, filename, model_name)
+            detection = process_custom_image(
+                str(file_path),
+                custom_model,
+                model_meta["class_names"],
+                model_meta["image_size"],
+                get_device(),
+            )
+        else:
+            from Detection.ml_pipeline import process_image
+            _terminal_logger.info("MODEL_LOAD user=%s source=default name=%s", username, model_name)
+            _terminal_logger.info("INFERENCE user=%s file=%s", username, filename)
+            detection = process_image(str(file_path))
     except Exception as exc:
         _terminal_logger.exception("ML_RUNTIME_UNAVAILABLE error=%s", exc)
+        _terminal_logger.warning(
+            "MODEL_FALLBACK user=%s source=%s name=%s reason=%s",
+            username,
+            model_source,
+            model_name,
+            exc,
+        )
         decision = decide_risk(validation_error="ML runtime unavailable")
         result.update(
             status=decision["status"],
@@ -419,6 +681,8 @@ def analyze():
         )
         _finalise(result)
         log_security_event(username, result)
+        if model_path:
+            model_path.unlink(missing_ok=True)
         if wants_json:
             return jsonify(
                 {
@@ -431,9 +695,9 @@ def analyze():
                 }
             ), 503
         return redirect(url_for("index"))
-
-    _terminal_logger.info("INFERENCE user=%s file=%s", username, filename)
-    detection = process_image(str(file_path))
+    finally:
+        if model_path:
+            model_path.unlink(missing_ok=True)
 
     decision = decide_risk(ml_result=detection)
 
@@ -456,6 +720,14 @@ def analyze():
         validation_message=validation_message,
         integrity=integrity,
         filename=filename,
+        model_type=model_info.get("model_type"),
+        model_source=model_info.get("model_source"),
+        model_name=model_info.get("model_name"),
+        checkpoint_loaded=model_info.get("checkpoint_loaded"),
+        class_names=model_info.get("class_names"),
+        num_classes=model_info.get("num_classes"),
+        model_created_at=model_info.get("model_created_at"),
+        reconstruction_status=model_info.get("reconstruction_status"),
         prediction=detection["label"] if decision["status"] != "blocked" else None,
         confidence=detection["confidence"] if decision["status"] != "blocked" else None,
         verdict=detection["verdict"],
@@ -519,6 +791,47 @@ def _sample_url(selected_sample: str):
     path = _safe_sample(selected_sample)
     return url_for("sample_image", filename=path.name) if path else None
 
+
+def _default_class_names() -> list[str] | None:
+    try:
+        from torchvision.models import EfficientNet_B0_Weights
+        return list(EfficientNet_B0_Weights.DEFAULT.meta.get("categories", []))
+    except Exception:
+        return None
+
+
+def _load_custom_model(uploaded_model):
+    if not uploaded_model or not uploaded_model.filename:
+        return None, None, None, None
+
+    filename = secure_filename(uploaded_model.filename)
+    if not filename.lower().endswith((".pt", ".pth")):
+        return None, None, "Only .pt checkpoints are supported.", None
+
+    ts = datetime.now().strftime("%Y%m%d%H%M%S")
+    model_path = MODEL_UPLOAD_DIR / f"{ts}_{filename}"
+    uploaded_model.save(model_path)
+
+    if model_path.stat().st_size > MAX_MODEL_UPLOAD_BYTES:
+        model_path.unlink(missing_ok=True)
+        return None, None, "Model file exceeds upload limit.", None
+
+    device = get_device()
+    ok, message, checkpoint = safe_load_checkpoint(model_path, device)
+    if not ok:
+        model_path.unlink(missing_ok=True)
+        return None, None, message, None
+
+    try:
+        model, meta = load_model_from_checkpoint(checkpoint, device)
+    except Exception as exc:
+        model_path.unlink(missing_ok=True)
+        return None, None, f"Failed to load model: {exc}", None
+
+    meta["model_name"] = filename
+    meta["checkpoint_loaded"] = True
+    return model, meta, None, model_path
+
 def _access_risk_level(risk: float) -> str:
     if risk <= 0.35:
         return "LOW"
@@ -563,7 +876,10 @@ def _build_pipeline(result: dict) -> list:
         {
             "id": "preprocess", "number": "4", "title": "Preprocessing", "label": "Image Preparation",
             "body": "Image converted to RGB and transformed into a model-ready tensor.",
-            "details": [{"label": "Color", "value": "RGB"}, {"label": "Transform", "value": "EfficientNet-B0 default"}],
+            "details": [
+                {"label": "Color", "value": "RGB"},
+                {"label": "Transform", "value": f"{result.get('model_name', 'EfficientNet-B0')} default"},
+            ],
         },
         {
             "id": "integrity", "number": "5", "title": "Model Integrity", "label": "Fingerprint Verify",
@@ -587,7 +903,8 @@ def _build_pipeline(result: dict) -> list:
             "id": "predict", "number": "6", "title": "AI Prediction", "label": "Model Inference",
             "body": "Classifier generated ranked labels for the input image.",
             "details": [
-                {"label": "Model", "value": "EfficientNet-B0"},
+                {"label": "Model", "value": result.get("model_name", "EfficientNet-B0")},
+                {"label": "Source", "value": result.get("model_source", "default").title()},
                 {"label": "Top Label", "value": detection.get("label", "N/A")},
                 {"label": "Confidence", "value": _pct(detection.get("confidence"))},
             ],
@@ -746,7 +1063,7 @@ def _join_reasons(reasons, fallback, allowed):
 @app.errorhandler(413)
 def _too_large(_e):
     if _wants_json():
-        return jsonify({"success": False, "message": "File is too large. Maximum allowed size is 5 MB."}), 413
+        return jsonify({"success": False, "message": "File is too large. Maximum allowed size is 600 MB."}), 413
     return redirect(url_for("index"))
 
 

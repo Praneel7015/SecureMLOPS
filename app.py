@@ -249,6 +249,7 @@ def api_training_dataset_upload():
         "image_count": validation.image_count,
         "class_distribution": validation.class_distribution,
         "source_name": dataset_file.filename,
+        "owner": username,
     }
     record = save_dataset_metadata(dataset_id, metadata)
     zip_path.unlink(missing_ok=True)
@@ -267,7 +268,7 @@ def api_training_dataset_list():
     username = session.get("user")
     if not username:
         return jsonify({"success": False, "message": "Please log in to view datasets."}), 401
-    return jsonify({"success": True, "datasets": list_datasets()})
+    return jsonify({"success": True, "datasets": list_datasets(owner=username)})
 
 
 @app.route("/api/training/start", methods=["POST"])
@@ -288,6 +289,8 @@ def api_training_start():
     dataset = get_dataset(dataset_id)
     if not dataset:
         return jsonify({"success": False, "message": "Dataset not found."}), 404
+    if dataset.get("owner") != username:
+        return jsonify({"success": False, "message": "Dataset access denied."}), 403
 
     access_result = analyse_request(
         user_id=username,
@@ -307,7 +310,7 @@ def api_training_start():
         return jsonify({"success": False, "message": "Dataset directory missing."}), 400
 
     try:
-        job = submit_training_job(dataset_id, dataset_dir, cleaned)
+        job = submit_training_job(dataset_id, dataset_dir, cleaned, owner=username)
     except RuntimeError as exc:
         return jsonify({"success": False, "message": str(exc)}), 429
 
@@ -320,7 +323,7 @@ def api_training_jobs():
     if not username:
         return jsonify({"success": False, "message": "Please log in to view jobs."}), 401
     from training.progress_tracker import list_jobs
-    return jsonify({"success": True, "jobs": list_jobs()})
+    return jsonify({"success": True, "jobs": list_jobs(owner=username)})
 
 
 @app.route("/api/training/jobs/<job_id>", methods=["GET"])
@@ -332,6 +335,8 @@ def api_training_job_status(job_id: str):
     job = get_job(job_id)
     if not job:
         return jsonify({"success": False, "message": "Job not found."}), 404
+    if job.get("owner") != username:
+        return jsonify({"success": False, "message": "Job access denied."}), 403
     return jsonify({"success": True, "job": job})
 
 
@@ -340,7 +345,7 @@ def api_training_models():
     username = session.get("user")
     if not username:
         return jsonify({"success": False, "message": "Please log in to view models."}), 401
-    return jsonify({"success": True, "models": list_models()})
+    return jsonify({"success": True, "models": list_models(owner=username)})
 
 
 @app.route("/api/training/models/<model_id>/download", methods=["GET"])
@@ -352,6 +357,8 @@ def api_training_model_download(model_id: str):
     model = get_model(model_id)
     if not model:
         return jsonify({"success": False, "message": "Model not found."}), 404
+    if model.get("owner") != username:
+        return jsonify({"success": False, "message": "Model access denied."}), 403
 
     file_path = Path(model.get("file_path", ""))
     if not file_path.exists():

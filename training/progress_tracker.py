@@ -30,12 +30,15 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def list_jobs() -> list[dict[str, Any]]:
+def list_jobs(owner: str | None = None) -> list[dict[str, Any]]:
     ensure_training_dirs()
     with _lock:
         payload = _load_jobs()
     jobs = payload.get("jobs", {})
-    return sorted(jobs.values(), key=lambda item: item.get("created_at", ""), reverse=True)
+    values = jobs.values()
+    if owner:
+        values = [item for item in values if item.get("owner") == owner]
+    return sorted(values, key=lambda item: item.get("created_at", ""), reverse=True)
 
 
 def get_job(job_id: str) -> dict[str, Any] | None:
@@ -45,11 +48,12 @@ def get_job(job_id: str) -> dict[str, Any] | None:
     return payload.get("jobs", {}).get(job_id)
 
 
-def init_job(job_id: str, dataset_id: str, config: dict[str, Any]) -> dict[str, Any]:
+def init_job(job_id: str, dataset_id: str, config: dict[str, Any], owner: str | None = None) -> dict[str, Any]:
     ensure_training_dirs()
     job = {
         "job_id": job_id,
         "dataset_id": dataset_id,
+        "owner": owner,
         "status": "queued",
         "created_at": _now_iso(),
         "updated_at": _now_iso(),

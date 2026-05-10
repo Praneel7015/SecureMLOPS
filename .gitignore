@@ -48,3 +48,4 @@ uploads/*
 #Trained models
 mobilenetv3_*.pt
 resnet18_*.pt
+efficientnet_b0_*.pt

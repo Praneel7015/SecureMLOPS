@@ -30,12 +30,15 @@ def _write_json(path: Path, payload: dict) -> None:
     tmp_path.replace(path)
 
 
-def list_datasets() -> list[dict[str, Any]]:
+def list_datasets(owner: str | None = None) -> list[dict[str, Any]]:
     ensure_training_dirs()
     with _registry_lock:
         payload = _load_json(DATASET_REGISTRY_PATH)
     datasets = payload.get("datasets", {})
-    return sorted(datasets.values(), key=lambda item: item.get("created_at", ""), reverse=True)
+    values = datasets.values()
+    if owner:
+        values = [item for item in values if item.get("owner") == owner]
+    return sorted(values, key=lambda item: item.get("created_at", ""), reverse=True)
 
 
 def get_dataset(dataset_id: str) -> dict[str, Any] | None:
@@ -58,12 +61,15 @@ def save_dataset_metadata(dataset_id: str, metadata: dict[str, Any]) -> dict[str
     return record
 
 
-def list_models() -> list[dict[str, Any]]:
+def list_models(owner: str | None = None) -> list[dict[str, Any]]:
     ensure_training_dirs()
     with _registry_lock:
         payload = _load_json(MODEL_REGISTRY_PATH)
     models = payload.get("models", {})
-    return sorted(models.values(), key=lambda item: item.get("created_at", ""), reverse=True)
+    values = models.values()
+    if owner:
+        values = [item for item in values if item.get("owner") == owner]
+    return sorted(values, key=lambda item: item.get("created_at", ""), reverse=True)
 
 
 def get_model(model_id: str) -> dict[str, Any] | None:

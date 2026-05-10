@@ -20,7 +20,7 @@ from training.model_factory import build_model, resolve_model_type
 logger = logging.getLogger("secureml.training")
 
 
-def run_training_job(job_id: str, dataset_dir: str, config: dict[str, Any]) -> None:
+def run_training_job(job_id: str, dataset_dir: str, config: dict[str, Any], owner: str | None = None) -> None:
     progress_tracker.update_job(job_id, status="running")
     progress_tracker.append_log(job_id, "Training job started.")
 
@@ -171,6 +171,7 @@ def run_training_job(job_id: str, dataset_dir: str, config: dict[str, Any]) -> N
             class_names=class_names,
             image_size=SUPPORTED_MODELS[model_type]["image_size"],
             metrics=metrics,
+            owner=owner,
         )
 
         progress_tracker.update_job(

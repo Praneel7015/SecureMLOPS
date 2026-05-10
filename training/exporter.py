@@ -23,6 +23,7 @@ def export_model(
     class_names: list[str],
     image_size: int,
     metrics: dict[str, Any],
+    owner: str | None = None,
 ) -> dict[str, Any]:
     TRAINED_MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -52,6 +53,7 @@ def export_model(
         "created_at": created_at,
         "file_name": filename,
         "file_path": str(model_path),
+        "owner": owner,
     }
 
     model_id = uuid.uuid4().hex

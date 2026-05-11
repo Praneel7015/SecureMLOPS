@@ -33,6 +33,9 @@ __MACOSX/
 .DS_Store
 Thumbs.db
 .idea/
+.agents/
+skills-lock.json
+
 
 # Runtime data
 logs/*
@@ -40,7 +43,7 @@ uploads/*
 !logs/.gitkeep
 uploads/*
 !uploads/.gitkeep
-
+TODO.md
 # Local secrets and overrides
 .env
 .env.*

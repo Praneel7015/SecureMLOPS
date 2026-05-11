@@ -194,6 +194,7 @@ miniproject/
 - Pillow
 - Werkzeug
 
+-postgres 16.13
 ## First-Time Setup (Backend + React Frontend)
 
 ### 1. Clone and open the project
@@ -218,10 +219,6 @@ pip install -r requirements.txt
 
 ### 4. Install React frontend dependencies (`frontend` folder)
 
-```powershell
-
-pip install flask torch torchvision pillow werkzeug psycopg2-binary python-dotenv
-```
 `.env` File
 
 Create a `.env` file in the project root:

@@ -7,7 +7,7 @@ BAN_FILE = Path("logs/bans.json")
 
 
 class RateLimiter:
-    def __init__(self, limit=5, window_seconds=60, cooldown_seconds=120, strike_limit=3, mode="inference"):
+    def __init__(self, limit=8, window_seconds=60, cooldown_seconds=60, strike_limit=5, mode="inference"):
         self.mode = mode
         self.limit = limit
         self.window = timedelta(seconds=window_seconds)

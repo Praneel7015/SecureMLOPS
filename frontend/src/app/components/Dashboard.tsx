@@ -9,7 +9,10 @@ import {
   apiListJobs,
   apiGetJob,
   apiListModels,
+  apiGetDriftTelemetry,
   AnalysisResult,
+  DriftEvent,
+  DriftSummary,
   SampleImage,
   SupportedModel,
   DatasetSummary,
@@ -17,7 +20,7 @@ import {
   TrainingModel,
 } from '../api';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from './ui/chart';
-import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Scatter, ScatterChart, XAxis, YAxis } from 'recharts';
 
 interface DashboardProps {
   username: string;
@@ -172,10 +175,33 @@ export function Dashboard({
     freeze_backbone: false,
   });
   const [selectedDatasetId, setSelectedDatasetId] = useState<string>('');
+  const [driftEvents, setDriftEvents] = useState<DriftEvent[]>([]);
+  const [driftSummary, setDriftSummary] = useState<DriftSummary | null>(null);
+  const [driftError, setDriftError] = useState<string>('');
+  const [isDriftLoading, setIsDriftLoading] = useState(false);
+  const [projectionMode, setProjectionMode] = useState<'pca' | 'tsne'>('pca');
 
   useEffect(() => {
     void loadTrainingOverview();
   }, []);
+
+  const loadDriftTelemetry = async () => {
+    setIsDriftLoading(true);
+    setDriftError('');
+    try {
+      const response = await apiGetDriftTelemetry();
+      if (!response.ok) {
+        setDriftError(response.message || 'Unable to load drift telemetry.');
+      } else {
+        setDriftEvents(response.events || []);
+        setDriftSummary(response.summary || null);
+      }
+    } catch (_error) {
+      setDriftError('Unable to load drift telemetry.');
+    } finally {
+      setIsDriftLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!activeJobId) {
@@ -208,6 +234,12 @@ export function Dashboard({
       window.clearInterval(interval);
     };
   }, [activeJobId]);
+
+  useEffect(() => {
+    if (activeSection === 'monitoring') {
+      void loadDriftTelemetry();
+    }
+  }, [activeSection]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -454,6 +486,11 @@ export function Dashboard({
     f1: { label: 'F1', color: 'hsl(210 80% 60%)' },
     epochDuration: { label: 'Epoch (s)', color: 'hsl(262 65% 60%)' },
     count: { label: 'Count', color: 'hsl(165 75% 45%)' },
+    driftScore: { label: 'Drift Score', color: 'hsl(200 85% 55%)' },
+    driftAvg: { label: 'Rolling Avg', color: 'hsl(88 70% 50%)' },
+    driftHigh: { label: 'High', color: 'hsl(12 85% 55%)' },
+    driftMedium: { label: 'Medium', color: 'hsl(38 90% 55%)' },
+    driftLow: { label: 'Low', color: 'hsl(150 70% 45%)' },
   };
 
   const classDistributionData = useMemo(() => {
@@ -475,6 +512,82 @@ export function Dashboard({
     }
     return `${labels.slice(0, 6).join(', ')} (+${labels.length - 6} more)`;
   }, [backendResult]);
+
+  const driftTimeline = useMemo(() => {
+    if (!driftEvents.length) {
+      return [];
+    }
+    const chronological = [...driftEvents].reverse();
+    let rollingSum = 0;
+    return chronological.map((event, idx) => {
+      const score = event.score ?? 0;
+      rollingSum += score;
+      return {
+        index: idx + 1,
+        driftScore: score,
+        driftAvg: rollingSum / (idx + 1),
+        severity: event.severity,
+        timestamp: event.timestamp,
+      };
+    });
+  }, [driftEvents]);
+
+  const driftSeverityData = useMemo(() => {
+    const counts = driftSummary?.severity_counts || { LOW: 0, MEDIUM: 0, HIGH: 0 };
+    return [
+      { label: 'LOW', count: counts.LOW, fill: 'var(--color-driftLow)' },
+      { label: 'MEDIUM', count: counts.MEDIUM, fill: 'var(--color-driftMedium)' },
+      { label: 'HIGH', count: counts.HIGH, fill: 'var(--color-driftHigh)' },
+    ];
+  }, [driftSummary]);
+
+  const driftScatterData = useMemo(() => {
+    if (!driftEvents.length) {
+      return [];
+    }
+    return driftEvents
+      .filter((event) => event.projection_x !== null && event.projection_x !== undefined)
+      .filter((event) => event.projection_y !== null && event.projection_y !== undefined)
+      .map((event) => ({
+        x: event.projection_x as number,
+        y: event.projection_y as number,
+        severity: event.severity,
+        score: event.score,
+      }));
+  }, [driftEvents]);
+
+  const driftScatterTsneData = useMemo(() => {
+    return driftScatterData;
+  }, [driftScatterData]);
+
+  const driftModelComparison = useMemo(() => {
+    if (!driftEvents.length) {
+      return [];
+    }
+    const modelMap = new Map<string, { count: number; avgScore: number; high: number; medium: number; low: number }>();
+    driftEvents.forEach((event) => {
+      const key = event.model_name || event.model_type || 'Unknown';
+      const entry = modelMap.get(key) || { count: 0, avgScore: 0, high: 0, medium: 0, low: 0 };
+      entry.count += 1;
+      entry.avgScore += event.score || 0;
+      if (event.severity === 'HIGH') {
+        entry.high += 1;
+      } else if (event.severity === 'MEDIUM') {
+        entry.medium += 1;
+      } else {
+        entry.low += 1;
+      }
+      modelMap.set(key, entry);
+    });
+    return Array.from(modelMap.entries()).map(([model, entry]) => ({
+      model,
+      count: entry.count,
+      avgScore: entry.count ? entry.avgScore / entry.count : 0,
+      high: entry.high,
+      medium: entry.medium,
+      low: entry.low,
+    }));
+  }, [driftEvents]);
 
   const handleTrainingLogScroll = () => {
     const logEl = trainingLogRef.current;
@@ -563,6 +676,21 @@ export function Dashboard({
       </LineChart>
     </ChartContainer>
   );
+
+  const DriftScatterTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: any }> }) => {
+    if (!active || !payload || !payload.length) {
+      return null;
+    }
+    const point = payload[0].payload as { x: number; y: number; severity: string; score: number };
+    return (
+      <div className="rounded-lg border border-border bg-background px-3 py-2 text-xs font-mono text-muted-foreground shadow-lg">
+        <div className="text-foreground">Severity: {point.severity}</div>
+        <div>Score: {point.score.toFixed(3)}</div>
+        <div>X: {point.x.toFixed(2)}</div>
+        <div>Y: {point.y.toFixed(2)}</div>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
@@ -985,6 +1113,31 @@ export function Dashboard({
                       </div>
                     ) : (
                       <p className="font-mono text-muted-foreground">No inference data available yet.</p>
+                    )}
+                  </div>
+                  <div className="bg-card rounded-lg border border-border p-6">
+                    <h2 className="mb-4 text-foreground">Drift Analysis</h2>
+                    {backendResult ? (
+                      <div className="space-y-2 font-mono text-muted-foreground">
+                        <div className="flex items-center justify-between gap-3">
+                          <span>Severity: {backendResult.drift_severity || 'UNAVAILABLE'}</span>
+                          <span className={`px-2 py-1 rounded text-xs font-mono ${
+                            backendResult.drift_severity === 'HIGH'
+                              ? 'bg-destructive/20 text-destructive'
+                              : backendResult.drift_severity === 'MEDIUM'
+                                ? 'bg-warning/20 text-warning'
+                                : 'bg-success/20 text-success'
+                          }`}>
+                            {backendResult.drift_severity || 'UNAVAILABLE'}
+                          </span>
+                        </div>
+                        <div>Score: {backendResult.drift_score ?? 'N/A'}</div>
+                        <div>Status: {backendResult.drift_status || 'No drift baseline available'}</div>
+                        <div>Distance: {backendResult.drift_distance ?? 'N/A'}</div>
+                        <div>Reference: {backendResult.drift_reference || 'N/A'}</div>
+                      </div>
+                    ) : (
+                      <p className="font-mono text-muted-foreground">No drift data available yet.</p>
                     )}
                   </div>
                   <div className="bg-card rounded-lg border border-border p-6">
@@ -1505,12 +1658,210 @@ export function Dashboard({
           )}
 
           {activeSection === 'monitoring' && (
-            <div className="bg-card rounded-lg border border-border p-6">
-              <div className="flex items-center gap-3 mb-3">
-                <BarChart3 className="w-5 h-5 text-accent" />
-                <h2 className="text-foreground">Monitoring</h2>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <BarChart3 className="w-5 h-5 text-accent" />
+                  <h2 className="text-foreground">Monitoring</h2>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => void loadDriftTelemetry()}
+                    className="flex items-center gap-2 px-3 py-2 border border-border rounded-lg hover:bg-muted transition-colors"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    <span className="font-mono text-sm">Refresh</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      const payload = JSON.stringify({ events: driftEvents, summary: driftSummary }, null, 2);
+                      const blob = new Blob([payload], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.download = `drift-report-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+                      link.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 border border-border rounded-lg hover:bg-muted transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span className="font-mono text-sm">Export</span>
+                  </button>
+                </div>
               </div>
-              <p className="font-mono text-muted-foreground">No monitoring telemetry available yet.</p>
+
+              {(driftError || isDriftLoading) && (
+                <div className={`rounded-lg border px-4 py-3 ${driftError ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-border/30 bg-muted/40 text-muted-foreground'}`}>
+                  {driftError || 'Loading drift telemetry...'}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-card rounded-lg border border-border p-4">
+                  <div className="text-muted-foreground mb-2">Total Drift Events</div>
+                  <div className="text-foreground text-2xl">{driftSummary?.total ?? 0}</div>
+                  <div className="font-mono text-xs text-muted-foreground">Latest: {driftSummary?.latest?.severity || 'N/A'}</div>
+                </div>
+                <div className="bg-card rounded-lg border border-border p-4">
+                  <div className="text-muted-foreground mb-2">Average Drift Score</div>
+                  <div className="text-foreground text-2xl">{(driftSummary?.avg_score ?? 0).toFixed(3)}</div>
+                  <div className="font-mono text-xs text-muted-foreground">Rolling mean across events</div>
+                </div>
+                <div className="bg-card rounded-lg border border-border p-4">
+                  <div className="text-muted-foreground mb-2">Most Recent Reference</div>
+                  <div className="text-foreground text-sm font-mono truncate" title={driftSummary?.latest?.reference || 'N/A'}>
+                    {driftSummary?.latest?.reference || 'N/A'}
+                  </div>
+                  <div className="font-mono text-xs text-muted-foreground">Model: {driftSummary?.latest?.model_name || 'N/A'}</div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <div className="bg-card rounded-lg border border-border p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <TrendingUp className="w-5 h-5 text-accent" />
+                    <h3 className="text-foreground">Drift Score Trend</h3>
+                  </div>
+                  {driftTimeline.length ? (
+                    <ChartContainer config={chartConfig} className="h-56 w-full">
+                      <LineChart data={driftTimeline} margin={{ left: 12, right: 12 }}>
+                        <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                        <XAxis dataKey="index" tickLine={false} axisLine={false} />
+                        <YAxis tickLine={false} axisLine={false} domain={[0, 1]} />
+                        <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                        <Legend verticalAlign="top" height={24} iconType="circle" />
+                        <Line type="monotone" dataKey="driftScore" stroke="var(--color-driftScore)" strokeWidth={2.5} dot={{ r: 3 }} connectNulls isAnimationActive={false} />
+                        <Line type="monotone" dataKey="driftAvg" stroke="var(--color-driftAvg)" strokeWidth={2} dot={false} connectNulls isAnimationActive={false} />
+                      </LineChart>
+                    </ChartContainer>
+                  ) : (
+                    <p className="font-mono text-muted-foreground">No drift telemetry recorded yet.</p>
+                  )}
+                </div>
+
+                <div className="bg-card rounded-lg border border-border p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <BarChart3 className="w-5 h-5 text-accent" />
+                    <h3 className="text-foreground">Severity Distribution</h3>
+                  </div>
+                  {driftSeverityData.some((item) => item.count > 0) ? (
+                    <ChartContainer config={chartConfig} className="h-56 w-full">
+                      <BarChart data={driftSeverityData} margin={{ left: 12, right: 12 }}>
+                        <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                        <XAxis dataKey="label" tickLine={false} axisLine={false} />
+                        <YAxis tickLine={false} axisLine={false} />
+                        <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                        <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                          {driftSeverityData.map((item) => (
+                            <Cell key={item.label} fill={item.fill} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ChartContainer>
+                  ) : (
+                    <p className="font-mono text-muted-foreground">Drift severities will appear after inference activity.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <div className="bg-card rounded-lg border border-border p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Activity className="w-5 h-5 text-accent" />
+                    <h3 className="text-foreground">Embedding Projection (PCA)</h3>
+                  </div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <button
+                      onClick={() => setProjectionMode('pca')}
+                      className={`px-3 py-1.5 rounded-lg border text-xs font-mono ${
+                        projectionMode === 'pca'
+                          ? 'border-accent bg-accent/10 text-accent'
+                          : 'border-border text-muted-foreground hover:bg-muted'
+                      }`}
+                    >
+                      PCA
+                    </button>
+                    <button
+                      onClick={() => setProjectionMode('tsne')}
+                      className={`px-3 py-1.5 rounded-lg border text-xs font-mono ${
+                        projectionMode === 'tsne'
+                          ? 'border-accent bg-accent/10 text-accent'
+                          : 'border-border text-muted-foreground hover:bg-muted'
+                      }`}
+                    >
+                      t-SNE (preview)
+                    </button>
+                  </div>
+                  {driftScatterData.length ? (
+                    <ChartContainer config={chartConfig} className="h-56 w-full">
+                      <ScatterChart margin={{ left: 12, right: 12 }}>
+                        <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                        <XAxis dataKey="x" tickLine={false} axisLine={false} />
+                        <YAxis dataKey="y" tickLine={false} axisLine={false} />
+                        <ChartTooltip cursor={false} content={<DriftScatterTooltip />} />
+                        <Scatter data={projectionMode === 'pca' ? driftScatterData : driftScatterTsneData} fill="var(--color-driftScore)" />
+                      </ScatterChart>
+                    </ChartContainer>
+                  ) : (
+                    <p className="font-mono text-muted-foreground">
+                      Projection points will appear after drift scoring. t-SNE preview currently reuses PCA projections.
+                    </p>
+                  )}
+                </div>
+
+                <div className="bg-card rounded-lg border border-border p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Database className="w-5 h-5 text-accent" />
+                    <h3 className="text-foreground">Per-model Drift Comparison</h3>
+                  </div>
+                  {driftModelComparison.length ? (
+                    <div className="space-y-3">
+                      {driftModelComparison.map((entry) => (
+                        <div key={entry.model} className="border border-border rounded-lg p-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="font-mono text-foreground truncate" title={entry.model}>{entry.model}</span>
+                            <span className="font-mono text-xs text-muted-foreground">{entry.count} events</span>
+                          </div>
+                          <div className="font-mono text-xs text-muted-foreground mt-2">
+                            Avg Score: {entry.avgScore.toFixed(3)} · High: {entry.high} · Medium: {entry.medium} · Low: {entry.low}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="font-mono text-muted-foreground">Per-model drift stats will appear after inference activity.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-card rounded-lg border border-border p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <History className="w-5 h-5 text-accent" />
+                  <h3 className="text-foreground">Recent Drift Events</h3>
+                </div>
+                {driftEvents.length ? (
+                  <div className="space-y-3">
+                    {driftEvents.slice(0, 6).map((event) => (
+                      <div key={event.timestamp} className="border border-border rounded-lg p-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-mono text-sm text-foreground">{event.severity}</span>
+                          <span className="font-mono text-xs text-muted-foreground">{event.timestamp}</span>
+                        </div>
+                        <div className="font-mono text-xs text-muted-foreground mt-2 truncate" title={event.status}>
+                          {event.status}
+                        </div>
+                        <div className="font-mono text-xs text-muted-foreground">Score: {event.score.toFixed(3)} · Distance: {event.distance ?? 'N/A'}</div>
+                        <div className="font-mono text-xs text-muted-foreground truncate" title={event.reference || 'N/A'}>
+                          Reference: {event.reference || 'N/A'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="font-mono text-muted-foreground">No drift events recorded yet.</p>
+                )}
+              </div>
             </div>
           )}
 

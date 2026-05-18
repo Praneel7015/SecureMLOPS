@@ -64,4 +64,6 @@ def load_model_from_checkpoint(checkpoint: dict[str, Any], device: torch.device)
         "image_size": checkpoint["image_size"],
         "num_classes": checkpoint["num_classes"],
         "created_at": checkpoint.get("created_at"),
+        "drift_baseline": checkpoint.get("drift_baseline"),
+        "drift_baseline_path": checkpoint.get("drift_baseline_path"),
     }

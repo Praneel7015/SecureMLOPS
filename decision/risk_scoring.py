@@ -40,10 +40,20 @@ def compute_input_risk(ml_result: dict) -> float:
     margin = ml_result["margin"]
     conf_drop = ml_result["fgsm_confidence_drop"]
 
+    drift_score = float(ml_result.get("drift_score") or 0.0)
+    drift_severity = ml_result.get("drift_severity")
+
     risk += 0.10 * anomaly_score          # was 0.20
     risk += 0.10 * entropy                # was 0.20
     risk += 0.05 * (1.0 - margin)        # was 0.10
     risk += 0.10 * conf_drop             # was 0.20
+
+    if drift_severity == "HIGH":
+        risk += 0.18
+    elif drift_severity == "MEDIUM":
+        risk += 0.1
+
+    risk += 0.15 * drift_score
 
     return min(risk, 1.0)
 

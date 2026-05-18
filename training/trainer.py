@@ -14,6 +14,7 @@ from core.runtime import get_device
 from training import progress_tracker
 from training.config import SUPPORTED_MODELS
 from training.dataset_loader import build_dataloaders, load_datasets
+from drift.baseline_manager import build_baseline, save_baseline
 from training.exporter import export_model
 from training.model_factory import build_model, resolve_model_type
 
@@ -165,6 +166,16 @@ def run_training_job(job_id: str, dataset_dir: str, config: dict[str, Any], owne
         metrics["final_f1"] = macro_f1
         metrics["total_duration_sec"] = time.perf_counter() - start_time
 
+        drift_baseline = None
+        drift_baseline_path = None
+        try:
+            drift_baseline = build_baseline(model, model_type, val_loader, device)
+            baseline_name = f"{model_type}_baseline_{job_id}.json"
+            drift_baseline_path = save_baseline(drift_baseline, baseline_name)
+            drift_baseline["reference"] = drift_baseline_path.name
+        except Exception as exc:
+            logger.warning("Drift baseline generation failed: %s", exc)
+
         model_metadata = export_model(
             model=model,
             model_type=model_type,
@@ -172,6 +183,8 @@ def run_training_job(job_id: str, dataset_dir: str, config: dict[str, Any], owne
             image_size=SUPPORTED_MODELS[model_type]["image_size"],
             metrics=metrics,
             owner=owner,
+            drift_baseline=drift_baseline,
+            drift_baseline_path=str(drift_baseline_path) if drift_baseline_path else None,
         )
 
         progress_tracker.update_job(

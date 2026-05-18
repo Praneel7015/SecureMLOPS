@@ -16,6 +16,8 @@ from werkzeug.utils import secure_filename
 from auth.auth_service import authenticate_user
 from core.runtime import get_device
 from Detection.custom_pipeline import process_custom_image
+from Detection.model_loader import load_model as load_default_model
+from Detection.preprocessing import preprocess_image_with_size
 from decision.engine import decide_risk
 from rate_limit.service import RateLimiter
 from training.config import MAX_DATASET_UPLOAD_BYTES, MAX_MODEL_UPLOAD_BYTES, SUPPORTED_MODELS
@@ -25,6 +27,11 @@ from training.registry import get_dataset, get_model, list_datasets, list_models
 from training.validator import safe_load_checkpoint, validate_dataset_zip, validate_training_config
 from utils.logging_setup import configure_logging, log_security_event
 from validation.image_validator import validate_image_path, validate_image_upload
+from drift.baseline_manager import load_baseline
+from drift.detector import analyze_drift
+from drift.telemetry import list_events as list_drift_events
+from drift.telemetry import record_event as record_drift_event
+from drift.telemetry import summarize_events
 
 from access_analysis import analyse_request
 
@@ -289,7 +296,8 @@ def api_training_start():
     dataset = get_dataset(dataset_id)
     if not dataset:
         return jsonify({"success": False, "message": "Dataset not found."}), 404
-    if dataset.get("owner") != username:
+    owner = dataset.get("owner")
+    if owner and owner != username:
         return jsonify({"success": False, "message": "Dataset access denied."}), 403
 
     access_result = analyse_request(
@@ -365,6 +373,15 @@ def api_training_model_download(model_id: str):
         return jsonify({"success": False, "message": "Model file missing."}), 404
 
     return send_from_directory(str(file_path.parent), file_path.name, as_attachment=True)
+
+
+@app.route("/api/monitoring/drift", methods=["GET"])
+def api_monitoring_drift():
+    username = session.get("user")
+    if not username:
+        return jsonify({"success": False, "message": "Please log in to view monitoring."}), 401
+    events = list_drift_events(owner=username)
+    return jsonify({"success": True, "events": events, "summary": summarize_events(events)})
 
 
 @app.route("/logout", methods=["POST"])
@@ -706,6 +723,59 @@ def analyze():
         if model_path:
             model_path.unlink(missing_ok=True)
 
+    drift_info = {
+        "score": None,
+        "severity": "UNAVAILABLE",
+        "status": "No drift baseline available",
+        "distance": None,
+        "z_score": None,
+        "reference": None,
+        "projection": None,
+    }
+    try:
+        baseline = _load_drift_baseline(model_meta if custom_model is not None else model_info)
+        image_size = model_meta["image_size"] if custom_model is not None and model_meta else 224
+        input_tensor = preprocess_image_with_size(str(file_path), image_size)
+        drift_model = custom_model if custom_model is not None else load_default_model()
+        drift_info = analyze_drift(drift_model, model_type, input_tensor, baseline, get_device())
+    except Exception as exc:
+        drift_info = {
+            "score": None,
+            "severity": "UNAVAILABLE",
+            "status": f"Drift evaluation failed: {exc}",
+            "distance": None,
+            "z_score": None,
+            "reference": None,
+            "projection": None,
+        }
+
+    detection.update(
+        drift_score=drift_info.get("score"),
+        drift_severity=drift_info.get("severity"),
+        drift_status=drift_info.get("status"),
+        drift_distance=drift_info.get("distance"),
+        drift_reference=drift_info.get("reference"),
+        drift_projection=drift_info.get("projection"),
+    )
+
+    if drift_info.get("score") is not None:
+        projection = drift_info.get("projection") or (None, None)
+        record_drift_event(
+            {
+                "owner": username,
+                "model_name": model_name,
+                "model_type": model_type,
+                "score": drift_info.get("score"),
+                "severity": drift_info.get("severity"),
+                "status": drift_info.get("status"),
+                "distance": drift_info.get("distance"),
+                "reference": drift_info.get("reference"),
+                "projection_x": projection[0],
+                "projection_y": projection[1],
+                "filename": filename,
+            }
+        )
+
     decision = decide_risk(ml_result=detection)
 
     _terminal_logger.info(
@@ -741,6 +811,12 @@ def analyze():
         anomaly=detection["anomaly"],
         adversarial=detection["adversarial"],
         issues=detection["issues"],
+        drift_score=detection.get("drift_score"),
+        drift_severity=detection.get("drift_severity"),
+        drift_status=detection.get("drift_status"),
+        drift_distance=detection.get("drift_distance"),
+        drift_reference=detection.get("drift_reference"),
+        drift_projection=detection.get("drift_projection"),
         detection=detection,
         access_analysis=access_result,
     )
@@ -807,6 +883,19 @@ def _default_class_names() -> list[str] | None:
         return None
 
 
+def _load_drift_baseline(model_meta: dict | None) -> dict | None:
+    if not model_meta:
+        return None
+    baseline = model_meta.get("drift_baseline")
+    if isinstance(baseline, dict):
+        return baseline
+    path = model_meta.get("drift_baseline_path")
+    if path:
+        loaded = load_baseline(Path(path))
+        return loaded
+    return None
+
+
 def _load_custom_model(uploaded_model):
     if not uploaded_model or not uploaded_model.filename:
         return None, None, None, None
@@ -862,7 +951,7 @@ def _build_pipeline(result: dict) -> list:
     failure_stage = _failure_stage(result)
     access = result.get("access_analysis") or {}
 
-    step_order = ["auth", "rate", "validate", "preprocess", "integrity","access", "predict", "anomaly", "adversarial", "decision"]
+    step_order = ["auth", "rate", "validate", "preprocess", "integrity", "access", "predict", "anomaly", "adversarial", "drift", "decision"]
 
     steps = [
         {
@@ -937,7 +1026,17 @@ def _build_pipeline(result: dict) -> list:
             ],
         },
         {
-            "id": "decision", "number": "9", "title": "Risk Decision", "label": "Final Verdict",
+            "id": "drift", "number": "9", "title": "Drift Detection", "label": "Distribution Shift",
+            "body": detection.get("drift_status", "No drift baseline available."),
+            "details": [
+                {"label": "Severity", "value": detection.get("drift_severity", "UNAVAILABLE")},
+                {"label": "Score", "value": _dec(detection.get("drift_score"))},
+                {"label": "Distance", "value": _dec(detection.get("drift_distance"))},
+                {"label": "Reference", "value": detection.get("drift_reference") or "N/A"},
+            ],
+        },
+        {
+            "id": "decision", "number": "10", "title": "Risk Decision", "label": "Final Verdict",
             "body": result.get("decision_reason", "No decision recorded."),
             "details": [
                 {"label": "System Status", "value": (status or "unknown").replace("_", " ").title()},

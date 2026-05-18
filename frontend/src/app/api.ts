@@ -46,9 +46,36 @@ export type AnalysisResult = {
   anomaly?: boolean;
   adversarial?: boolean;
   issues?: string[];
+  drift_score?: number | null;
+  drift_severity?: string;
+  drift_status?: string;
+  drift_distance?: number | null;
+  drift_reference?: string | null;
+  drift_projection?: [number, number] | null;
   filename?: string;
   audit_log?: AuditEntry[];
   pipeline_steps?: PipelineStep[];
+};
+
+export type DriftEvent = {
+  timestamp: string;
+  score: number;
+  severity: 'LOW' | 'MEDIUM' | 'HIGH';
+  status: string;
+  distance?: number | null;
+  reference?: string | null;
+  model_name?: string;
+  model_type?: string;
+  projection_x?: number | null;
+  projection_y?: number | null;
+  filename?: string;
+};
+
+export type DriftSummary = {
+  total: number;
+  avg_score: number;
+  severity_counts: Record<'LOW' | 'MEDIUM' | 'HIGH', number>;
+  latest?: DriftEvent | null;
 };
 
 type ApiResponse<T> = {
@@ -209,6 +236,25 @@ export async function apiInference(formData: FormData) {
     sample_images?: SampleImage[];
     selected_image_url?: string | null;
     selected_sample?: string | null;
+  }>;
+
+  return {
+    ok: response.ok,
+    status: response.status,
+    ...data,
+  };
+}
+
+export async function apiGetDriftTelemetry() {
+  const response = await fetch('/api/monitoring/drift', {
+    method: 'GET',
+    credentials: 'include',
+    headers: { Accept: 'application/json' },
+  });
+
+  const data = (await response.json()) as ApiResponse<{
+    events?: DriftEvent[];
+    summary?: DriftSummary;
   }>;
 
   return {

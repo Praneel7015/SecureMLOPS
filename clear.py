@@ -8,6 +8,8 @@ from pathlib import Path
 from training.config import (
     DATASET_REGISTRY_PATH,
     DATASETS_DIR,
+    DRIFT_BASELINE_DIR,
+    DRIFT_EVENTS_PATH,
     JOB_REGISTRY_PATH,
     MODEL_REGISTRY_PATH,
     TRAINED_MODELS_DIR,
@@ -67,6 +69,7 @@ def clear_training_state(dry_run: bool, owner: str | None = None) -> None:
         _clear_dir(DATASETS_DIR, "training datasets", dry_run)
         _clear_dir(TRAINED_MODELS_DIR, "trained models", dry_run)
         _clear_dir(TRAINING_STATE_DIR, "training state", dry_run)
+        _clear_dir(DRIFT_BASELINE_DIR, "drift baselines", dry_run)
 
         if dry_run:
             return
@@ -99,6 +102,26 @@ def clear_training_state(dry_run: bool, owner: str | None = None) -> None:
                 print(f"[dry-run] Remove model file: {model_path}")
             else:
                 model_path.unlink(missing_ok=True)
+        baseline_path = model.get("drift_baseline_path")
+        if baseline_path:
+            baseline_file = Path(baseline_path)
+            if baseline_file.exists():
+                if dry_run:
+                    print(f"[dry-run] Remove drift baseline: {baseline_file}")
+                else:
+                    baseline_file.unlink(missing_ok=True)
+
+    if DRIFT_EVENTS_PATH.exists():
+        events_payload = _load_registry(DRIFT_EVENTS_PATH, "events")
+        events = events_payload.get("events", [])
+        events = [event for event in events if event.get("owner") != owner]
+        if dry_run:
+            print(f"[dry-run] Remove drift events for user {owner}")
+        else:
+            DRIFT_EVENTS_PATH.write_text(
+                json.dumps({"events": events}, indent=2, sort_keys=True),
+                encoding="utf-8",
+            )
 
     if dry_run:
         print(f"[dry-run] Remove {len(jobs_to_remove)} jobs for user {owner}")

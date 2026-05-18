@@ -7,10 +7,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DATASETS_DIR = BASE_DIR / "training_datasets"
 TRAINING_STATE_DIR = BASE_DIR / "training_state"
 TRAINED_MODELS_DIR = BASE_DIR / "trained_models"
+DRIFT_BASELINE_DIR = BASE_DIR / "drift_baselines"
 
 JOB_REGISTRY_PATH = TRAINING_STATE_DIR / "jobs.json"
 MODEL_REGISTRY_PATH = TRAINING_STATE_DIR / "models.json"
 DATASET_REGISTRY_PATH = TRAINING_STATE_DIR / "datasets.json"
+DRIFT_EVENTS_PATH = TRAINING_STATE_DIR / "drift_events.json"
 
 MAX_DATASET_UPLOAD_BYTES = 600 * 1024 * 1024
 MAX_MODEL_UPLOAD_BYTES = 200 * 1024 * 1024
@@ -40,3 +42,4 @@ def ensure_training_dirs() -> None:
     DATASETS_DIR.mkdir(parents=True, exist_ok=True)
     TRAINING_STATE_DIR.mkdir(parents=True, exist_ok=True)
     TRAINED_MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    DRIFT_BASELINE_DIR.mkdir(parents=True, exist_ok=True)

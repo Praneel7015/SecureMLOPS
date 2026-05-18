@@ -1,16 +1,11 @@
 from PIL import Image
 from torchvision import transforms
-from torchvision.models import EfficientNet_B0_Weights
 
-# Standard ImageNet preprocessing extracted directly from the model weights
-transform = EfficientNet_B0_Weights.DEFAULT.transforms()
+from training.dataset_loader import build_eval_transforms
 
 
-def build_transform(image_size: int):
-    return transforms.Compose([
-        transforms.Resize((image_size, image_size)),
-        transforms.ToTensor(),
-    ])
+def build_transform(image_size: int) -> transforms.Compose:
+    return build_eval_transforms(image_size)
 
 
 def preprocess_image(image_file):

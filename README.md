@@ -136,6 +136,21 @@ Dev URL: `http://127.0.0.1:5173`
 - Uploaded checkpoints are validated before loading and must include required metadata.
 - Only ResNet18, EfficientNet-B0, and MobileNetV3 checkpoints are accepted.
 
+## Drift Detection
+
+SecureMLOPS includes lightweight drift detection for inference inputs:
+
+- **Baseline creation**: During training, embeddings are extracted from the final model and summarized into a centroid + distance statistics. Baselines are stored in `drift_baselines/` and persisted in model metadata.
+- **Inference scoring**: Each inference extracts a backbone embedding and compares it to the baseline using cosine distance and a z-score-based drift score.
+- **Severity levels**: LOW / MEDIUM / HIGH with scores logged in drift telemetry for monitoring.
+- **Risk integration**: Drift severity contributes to the overall risk score alongside anomaly/adversarial signals.
+
+Methodology summary:
+
+- Embedding extractor uses the model backbone (ResNet18 / EfficientNet-B0 / MobileNetV3).
+- Drift score = $\sigma(z)$ where $z$ is the z-score of the cosine distance to the baseline centroid.
+- Baseline statistics are cached and reused to keep inference lightweight.
+
 ## Tests
 
 ```powershell
@@ -150,35 +165,57 @@ pytest
 ## Project Structure
 
 ```text
-miniproject/
-├── app.py                     # Flask web application
+SecureMLOPS/
+├── app.py                     # Flask web application + API routes
+├── clear.py                   # Reset training datasets/models/registries
 ├── main.py                    # Simple script runner for local batch testing
 ├── images/                    # Default sample images
 ├── uploads/                   # User-uploaded or selected sample copies
-├── templates/
-│   └── index.html             # Main UI template
-├── static/
-│   └── style.css              # UI styling
-├── Detection/
+├── trained_models/            # Exported training checkpoints (.pt)
+├── training_datasets/         # Validated dataset extracts
+├── training_state/            # JSON registries + drift events
+│   ├── datasets.json
+│   ├── jobs.json
+│   ├── models.json
+│   └── drift_events.json
+├── drift_baselines/           # Stored drift baselines per model
+├── drift/                     # Drift detection modules
+│   ├── baseline_manager.py
+│   ├── detector.py
+│   ├── embedding_extractor.py
+│   ├── metrics.py
+│   └── telemetry.py
+├── Detection/                 # Inference pipeline
 │   ├── model_loader.py
 │   ├── preprocessing.py
 │   ├── predictor.py
 │   ├── anomaly.py
 │   ├── adversarial.py
 │   └── ml_pipeline.py
-├── decision/
-│   └── engine.py              # Final allow/warn/block decision logic
-├── integrity/
-│   └── checker.py             # Integrity verification
-├── validation/
-│   └── image_validator.py     # Upload and image checks
-├── rate_limit/
-│   └── service.py             # Request throttling
-├── auth/
+├── decision/                  # Risk scoring + decision logic
+│   ├── engine.py
+│   └── risk_scoring.py
+├── integrity/                 # Integrity verification
+│   └── checker.py
+├── validation/                # Upload and dataset checks
+│   └── image_validator.py
+├── rate_limit/                # Request throttling
+│   └── service.py
+├── auth/                      # Authentication utilities
 │   ├── auth_service.py
-│   └── users.json             # Stored user credentials
-├── config/
-│   └── integrity.json         # Protected file hashes + model fingerprint
+│   └── users.json
+├── config/                    # Integrity + config assets
+│   └── integrity.json
+├── training/                  # Training pipeline + registries
+│   ├── dataset_loader.py
+│   ├── exporter.py
+│   ├── job_manager.py
+│   ├── model_factory.py
+│   ├── progress_tracker.py
+│   └── trainer.py
+├── frontend/                  # React dashboard
+│   └── src/
+│       └── app/
 └── utils/
     ├── file_hash.py
     ├── model_fingerprint.py

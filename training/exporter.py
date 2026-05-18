@@ -24,6 +24,8 @@ def export_model(
     image_size: int,
     metrics: dict[str, Any],
     owner: str | None = None,
+    drift_baseline: dict[str, Any] | None = None,
+    drift_baseline_path: str | None = None,
 ) -> dict[str, Any]:
     TRAINED_MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -39,6 +41,8 @@ def export_model(
         "num_classes": len(class_names),
         "metrics": metrics,
         "created_at": created_at,
+        "drift_baseline": drift_baseline,
+        "drift_baseline_path": drift_baseline_path,
     }
 
     torch.save(payload, model_path)
@@ -54,6 +58,8 @@ def export_model(
         "file_name": filename,
         "file_path": str(model_path),
         "owner": owner,
+        "drift_baseline": drift_baseline,
+        "drift_baseline_path": drift_baseline_path,
     }
 
     model_id = uuid.uuid4().hex

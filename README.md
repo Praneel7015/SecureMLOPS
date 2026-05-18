@@ -78,6 +78,11 @@ py -3.11 -m venv .venv
 pip install -r requirements.txt
 ```
 
+Download models from https://drive.google.com/drive/folders/1SFu0g_KyeaNRF48UTsJ5djLtZSbc-cTp?usp=sharing 
+and save them to /Detection/security_models
+
+Images for testing adversial detection are also present in the drive link
+
 ### Frontend
 
 ```powershell

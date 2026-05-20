@@ -19,6 +19,8 @@ import {
   TrainingJob,
   TrainingModel,
 } from '../api';
+import { DashboardOverview } from './DashboardOverview';
+import { SecurityLogsPanel } from './SecurityLogsPanel';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from './ui/chart';
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Scatter, ScatterChart, XAxis, YAxis } from 'recharts';
 
@@ -96,6 +98,7 @@ export function Dashboard({
   const [backendResult, setBackendResult] = useState<AnalysisResult | null>(null);
   const [message, setMessage] = useState<string>('');
   const [messageType, setMessageType] = useState<'success' | 'error' | ''>('');
+  const [dashboardRefreshToken, setDashboardRefreshToken] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const modelInputRef = useRef<HTMLInputElement>(null);
   const datasetInputRef = useRef<HTMLInputElement>(null);
@@ -379,6 +382,7 @@ export function Dashboard({
 
       if (response.result) {
         setBackendResult(response.result);
+        setDashboardRefreshToken((token) => token + 1);
       }
 
       setMessageType(response.ok ? 'success' : 'error');
@@ -919,70 +923,7 @@ export function Dashboard({
         {/* Main Content Area */}
         <div className="flex-1 overflow-auto p-6 space-y-6">
           {activeSection === 'dashboard' && (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-card rounded-lg border border-border p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-muted-foreground">Datasets</span>
-                    <Database className="w-5 h-5 text-accent" />
-                  </div>
-                  <div className="text-foreground">{datasets.length}</div>
-                  <p className="font-mono text-muted-foreground mt-1">Validated corpora</p>
-                </div>
-                <div className="bg-card rounded-lg border border-border p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-muted-foreground">Training Jobs</span>
-                    <PlayCircle className="w-5 h-5 text-accent" />
-                  </div>
-                  <div className="text-foreground">{trainingJobs.length}</div>
-                  <p className="font-mono text-muted-foreground mt-1">
-                    {trainingJobs.filter((job) => job.status === 'completed').length} completed
-                  </p>
-                </div>
-                <div className="bg-card rounded-lg border border-border p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-muted-foreground">Trained Models</span>
-                    <FileCheck className="w-5 h-5 text-success" />
-                  </div>
-                  <div className="text-foreground">{models.length}</div>
-                  <p className="font-mono text-muted-foreground mt-1">Ready for inference</p>
-                </div>
-              </div>
-
-              <div className="bg-card rounded-lg border border-border p-6">
-                <h2 className="mb-4 text-foreground">Latest Inference Snapshot</h2>
-                {backendResult ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Database className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-muted-foreground truncate" title={backendResult.prediction || 'N/A'}>
-                        Prediction: {backendResult.prediction || 'N/A'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Lock className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-muted-foreground truncate" title={backendResult.risk_level}>
-                        Risk Level: {backendResult.risk_level}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Shield className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-muted-foreground truncate" title={backendResult.model_name || 'EfficientNet-B0'}>
-                        Model: {backendResult.model_name || 'EfficientNet-B0'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Activity className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-muted-foreground truncate" title={backendResult.status.replaceAll('_', ' ')}>
-                        Status: {backendResult.status.replaceAll('_', ' ')}
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="font-mono text-muted-foreground">Run an inference to populate dashboard telemetry.</p>
-                )}
-              </div>
-            </>
+            <DashboardOverview username={username} refreshToken={dashboardRefreshToken} />
           )}
 
           {activeSection === 'inference' && (
@@ -1865,15 +1806,7 @@ export function Dashboard({
             </div>
           )}
 
-          {activeSection === 'logs' && (
-            <div className="bg-card rounded-lg border border-border p-6">
-              <div className="flex items-center gap-3 mb-3">
-                <FileCheck className="w-5 h-5 text-accent" />
-                <h2 className="text-foreground">Security Logs</h2>
-              </div>
-              <p className="font-mono text-muted-foreground">No security events recorded.</p>
-            </div>
-          )}
+          {activeSection === 'logs' && <SecurityLogsPanel />}
         </div>
       </div>
     </div>

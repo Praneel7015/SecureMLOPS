@@ -32,6 +32,10 @@ from drift.detector import analyze_drift
 from drift.telemetry import list_events as list_drift_events
 from drift.telemetry import record_event as record_drift_event
 from drift.telemetry import summarize_events
+from telemetry import init_event_store
+from telemetry.events import EventSeverity, EventSource, EventType, emit_event
+from telemetry.aggregator import get_dashboard_summary, get_recent_activity, get_security_event_summary, get_system_status
+from telemetry.queries import export_events, query_events, get_event_by_id
 
 from access_analysis import analyse_request
 
@@ -59,6 +63,7 @@ app.config["UPLOAD_FOLDER"] = str(UPLOAD_DIR)
 
 rate_limiter = RateLimiter()
 configure_logging(BASE_DIR / "logs" / "security.log")
+init_event_store(BASE_DIR / "training_state" / "security_events.db")
 bootstrap_job_manager()
 
 # ── Terminal colour helpers ───────────────────────────────────────────────────
@@ -248,7 +253,27 @@ def api_training_dataset_upload():
     validation = validate_dataset_zip(zip_path, dataset_dir)
     if not validation.ok:
         shutil.rmtree(dataset_dir, ignore_errors=True)
+        emit_event(
+            severity=EventSeverity.WARNING,
+            event_type=EventType.TRAINING_DATASET_VALIDATION_FAILED,
+            source=EventSource.VALIDATION,
+            title="Dataset validation failed",
+            description=validation.message,
+            metadata={"source_name": dataset_file.filename, "issues": validation.issues},
+            owner=username,
+        )
         return jsonify({"success": False, "message": validation.message}), 400
+
+    if validation.issues:
+        emit_event(
+            severity=EventSeverity.WARNING,
+            event_type=EventType.TRAINING_DATASET_VALIDATION_WARNING,
+            source=EventSource.TRAINING,
+            title="Dataset validation warnings",
+            description=f"{len(validation.issues)} warning(s) during dataset validation.",
+            metadata={"source_name": dataset_file.filename, "issues": validation.issues},
+            owner=username,
+        )
 
     metadata = {
         "dataset_dir": str(validation.dataset_dir),
@@ -260,6 +285,20 @@ def api_training_dataset_upload():
     }
     record = save_dataset_metadata(dataset_id, metadata)
     zip_path.unlink(missing_ok=True)
+    emit_event(
+        severity=EventSeverity.INFO,
+        event_type=EventType.TRAINING_DATASET_UPLOADED,
+        source=EventSource.TRAINING,
+        title="Dataset uploaded",
+        description=f"Dataset {dataset_id} validated with {validation.image_count} images.",
+        metadata={
+            "dataset_id": dataset_id,
+            "image_count": validation.image_count,
+            "class_names": validation.class_names,
+            "source_name": dataset_file.filename,
+        },
+        owner=username,
+    )
 
     return jsonify(
         {
@@ -384,6 +423,123 @@ def api_monitoring_drift():
     return jsonify({"success": True, "events": events, "summary": summarize_events(events)})
 
 
+@app.route("/api/dashboard/summary", methods=["GET"])
+def api_dashboard_summary():
+    username = session.get("user")
+    if not username:
+        return jsonify({"success": False, "message": "Please log in to view dashboard."}), 401
+    return jsonify({"success": True, "summary": get_dashboard_summary(owner=username)})
+
+
+@app.route("/api/dashboard/activity", methods=["GET"])
+def api_dashboard_activity():
+    username = session.get("user")
+    if not username:
+        return jsonify({"success": False, "message": "Please log in to view activity."}), 401
+    limit = min(int(request.args.get("limit", 20)), 100)
+    return jsonify(
+        {
+            "success": True,
+            "activity": get_recent_activity(limit=limit, owner=username),
+        }
+    )
+
+
+@app.route("/api/dashboard/security-summary", methods=["GET"])
+def api_dashboard_security_summary():
+    username = session.get("user")
+    if not username:
+        return jsonify({"success": False, "message": "Please log in."}), 401
+    limit = min(int(request.args.get("limit", 10)), 50)
+    return jsonify(
+        {
+            "success": True,
+            "events": get_security_event_summary(limit=limit, owner=username),
+        }
+    )
+
+
+@app.route("/api/dashboard/status", methods=["GET"])
+def api_dashboard_status():
+    username = session.get("user")
+    if not username:
+        return jsonify({"success": False, "message": "Please log in."}), 401
+    return jsonify({"success": True, "status": get_system_status(owner=username)})
+
+
+@app.route("/api/security/events", methods=["GET"])
+def api_security_events():
+    username = session.get("user")
+    if not username:
+        return jsonify({"success": False, "message": "Please log in to view security logs."}), 401
+
+    page = max(1, int(request.args.get("page", 1)))
+    page_size = min(max(1, int(request.args.get("page_size", 50))), 200)
+    since_id = request.args.get("since_id")
+
+    result = query_events(
+        severity=request.args.get("severity") or None,
+        event_type=request.args.get("event_type") or None,
+        source=request.args.get("source") or None,
+        model=request.args.get("model") or None,
+        category=request.args.get("category") or None,
+        search=request.args.get("search") or None,
+        date_from=request.args.get("date_from") or None,
+        date_to=request.args.get("date_to") or None,
+        owner=username,
+        page=page,
+        page_size=page_size,
+        order=request.args.get("order", "DESC"),
+    )
+
+    if since_id:
+        # Live polling: return only events newer than since_id (by timestamp/id)
+        anchor = get_event_by_id(since_id)
+        if anchor:
+            filtered = [
+                event
+                for event in result["events"]
+                if event["timestamp"] > anchor["timestamp"]
+                or (event["timestamp"] == anchor["timestamp"] and event["id"] != since_id)
+            ]
+            result["events"] = filtered
+            result["pagination"]["has_new"] = len(filtered) > 0
+
+    return jsonify({"success": True, **result})
+
+
+@app.route("/api/security/events/export", methods=["GET"])
+def api_security_events_export():
+    username = session.get("user")
+    if not username:
+        return jsonify({"success": False, "message": "Please log in to export logs."}), 401
+
+    export_format = (request.args.get("format") or "json").lower()
+    if export_format not in {"json", "csv"}:
+        return jsonify({"success": False, "message": "Unsupported export format."}), 400
+
+    content, content_type, filename = export_events(
+        format=export_format,
+        owner=username,
+        severity=request.args.get("severity") or None,
+        event_type=request.args.get("event_type") or None,
+        source=request.args.get("source") or None,
+        model=request.args.get("model") or None,
+        category=request.args.get("category") or None,
+        search=request.args.get("search") or None,
+        date_from=request.args.get("date_from") or None,
+        date_to=request.args.get("date_to") or None,
+    )
+
+    from flask import Response
+
+    return Response(
+        content,
+        mimetype=content_type,
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
 @app.route("/logout", methods=["POST"])
 def logout():
     user = session.get("user", "unknown")
@@ -476,6 +632,15 @@ def analyze():
 
     if not is_valid:
         _terminal_logger.warning("VALIDATE_FAIL user=%s reason=%s", username, validation_message)
+        emit_event(
+            severity=EventSeverity.WARNING,
+            event_type=EventType.VALIDATION_IMAGE_FAILED,
+            source=EventSource.VALIDATION,
+            title="Image validation failed",
+            description=validation_message,
+            metadata={"filename": input_identifier},
+            owner=username,
+        )
         decision = decide_risk(validation_error=validation_message)
         result.update(
             status=decision["status"],
@@ -514,6 +679,15 @@ def analyze():
 
     if not integrity["ok"]:
         _terminal_logger.warning("INTEGRITY_FAIL details=%s", integrity.get("details"))
+        emit_event(
+            severity=EventSeverity.HIGH,
+            event_type=EventType.INTEGRITY_FAILURE,
+            source=EventSource.INTEGRITY,
+            title="Integrity check failed",
+            description=integrity["message"],
+            metadata={"details": integrity.get("details")},
+            owner=username,
+        )
         decision = decide_risk(integrity_ok=False)
         result.update(
             status=decision["status"],
@@ -575,6 +749,22 @@ def analyze():
         custom_model, model_meta, model_error, model_path = _load_custom_model(uploaded_model)
         if model_error:
             _terminal_logger.warning("MODEL_VALIDATE_FAIL user=%s reason=%s", username, model_error)
+            event_type = EventType.INTEGRITY_MALFORMED_CHECKPOINT
+            if "architecture" in model_error.lower():
+                event_type = EventType.INTEGRITY_ARCHITECTURE_MISMATCH
+            elif "unsupported" in model_error.lower():
+                event_type = EventType.INTEGRITY_UNSUPPORTED_ARCHITECTURE
+            elif "load" in model_error.lower() or "reconstruct" in model_error.lower():
+                event_type = EventType.INTEGRITY_RECONSTRUCTION_FAILURE
+            emit_event(
+                severity=EventSeverity.HIGH,
+                event_type=event_type,
+                source=EventSource.INTEGRITY,
+                title="Model checkpoint validation failed",
+                description=model_error,
+                metadata={"checkpoint_filename": uploaded_model.filename if uploaded_model else None},
+                owner=username,
+            )
             decision = decide_risk(validation_error=model_error)
             result.update(
                 status=decision["status"],
@@ -664,6 +854,15 @@ def analyze():
             detection = process_image(str(file_path))
     except Exception as exc:
         _terminal_logger.exception("ML_RUNTIME_UNAVAILABLE error=%s", exc)
+        emit_event(
+            severity=EventSeverity.CRITICAL,
+            event_type=EventType.SYSTEM_BACKEND_FAILURE,
+            source=EventSource.SYSTEM,
+            title="ML runtime unavailable",
+            description=str(exc),
+            metadata={"model_name": model_name, "model_source": model_source},
+            owner=username,
+        )
         _terminal_logger.warning(
             "MODEL_FALLBACK user=%s source=%s name=%s reason=%s",
             username,
@@ -739,6 +938,15 @@ def analyze():
         drift_model = custom_model if custom_model is not None else load_default_model()
         drift_info = analyze_drift(drift_model, model_type, input_tensor, baseline, get_device())
     except Exception as exc:
+        emit_event(
+            severity=EventSeverity.WARNING,
+            event_type=EventType.DRIFT_BASELINE_LOAD_FAILURE,
+            source=EventSource.DRIFT,
+            title="Drift baseline load failure",
+            description=str(exc),
+            metadata={"model_name": model_name, "model_type": model_type},
+            owner=username,
+        )
         drift_info = {
             "score": None,
             "severity": "UNAVAILABLE",

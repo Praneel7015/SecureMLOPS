@@ -5,6 +5,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
+from telemetry.events import EventSeverity, EventSource, EventType, emit_event
 from training.config import MAX_CONCURRENT_TRAINING, MAX_QUEUED_JOBS
 from training.progress_tracker import init_job, list_jobs, update_job, reconcile_incomplete_jobs
 from training.trainer import run_training_job
@@ -26,6 +27,20 @@ def submit_training_job(dataset_id: str, dataset_dir: str, config: dict[str, Any
 
         job_id = uuid.uuid4().hex
         job = init_job(job_id, dataset_id, config, owner=owner)
+        emit_event(
+            severity=EventSeverity.INFO,
+            event_type=EventType.TRAINING_STARTED,
+            source=EventSource.TRAINING,
+            title="Training job started",
+            description=f"Job {job_id} queued for dataset {dataset_id}.",
+            metadata={
+                "job_id": job_id,
+                "dataset_id": dataset_id,
+                "model_type": config.get("model_type"),
+                "epochs": config.get("epochs"),
+            },
+            owner=owner,
+        )
 
         def _runner():
             update_job(job_id, status="running")

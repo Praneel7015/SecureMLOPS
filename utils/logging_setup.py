@@ -1,6 +1,11 @@
 import json
 import logging
+import uuid
 from pathlib import Path
+
+from telemetry.events import emit_inference_event
+
+logger = logging.getLogger("secureml.security")
 
 
 def configure_logging(log_path):
@@ -30,3 +35,12 @@ def log_security_event(username, result):
         "filename": result.get("filename"),
     }
     logging.info(json.dumps(payload))
+
+    # Attach session correlation ID for traceability
+    if not result.get("session_id"):
+        result["session_id"] = uuid.uuid4().hex[:12]
+
+    try:
+        emit_inference_event(result, username=username)
+    except Exception as exc:
+        logger.exception("Telemetry emit failed: %s", exc)

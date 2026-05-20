@@ -343,6 +343,133 @@
       "status": "completed",
       "updated_at": "2026-05-09T08:59:38.218465+00:00"
     },
+    "a18df2fdefb8452e87e37e710c1cd253": {
+      "config": {
+        "batch_size": 16,
+        "epochs": 5,
+        "freeze_backbone": true,
+        "learning_rate": 0.001,
+        "model_type": "efficientnet-b0",
+        "seed": 42
+      },
+      "created_at": "2026-05-20T17:59:03.491768+00:00",
+      "current_epoch": 5,
+      "dataset_id": "534e9537092b4999ac0573b315e24967",
+      "epochs": 5,
+      "error": null,
+      "job_id": "a18df2fdefb8452e87e37e710c1cd253",
+      "logs": [
+        {
+          "message": "Training job started.",
+          "timestamp": "2026-05-20T17:59:03.783572+00:00"
+        },
+        {
+          "message": "Epoch 1/5 - train_loss=0.6375 val_loss=0.6789 train_acc=0.6667 val_acc=0.7500",
+          "timestamp": "2026-05-20T17:59:09.094558+00:00"
+        },
+        {
+          "message": "Epoch 2/5 - train_loss=0.5658 val_loss=0.6363 train_acc=0.7500 val_acc=0.5833",
+          "timestamp": "2026-05-20T17:59:12.465137+00:00"
+        },
+        {
+          "message": "Epoch 3/5 - train_loss=0.4775 val_loss=0.6530 train_acc=0.8542 val_acc=0.6667",
+          "timestamp": "2026-05-20T17:59:15.745246+00:00"
+        },
+        {
+          "message": "Epoch 4/5 - train_loss=0.4261 val_loss=0.6388 train_acc=0.8958 val_acc=0.6667",
+          "timestamp": "2026-05-20T17:59:19.180071+00:00"
+        },
+        {
+          "message": "Epoch 5/5 - train_loss=0.4416 val_loss=0.6467 train_acc=0.7917 val_acc=0.6667",
+          "timestamp": "2026-05-20T17:59:22.664986+00:00"
+        },
+        {
+          "message": "Training completed successfully.",
+          "timestamp": "2026-05-20T17:59:24.324867+00:00"
+        }
+      ],
+      "metrics": {
+        "class_names": [
+          "cat",
+          "dog"
+        ],
+        "confusion_matrix": [
+          [
+            6,
+            4
+          ],
+          [
+            0,
+            2
+          ]
+        ],
+        "epoch_durations": [
+          4.926629199995659,
+          3.3425123000051826,
+          3.2474402000079863,
+          3.399251200025901,
+          3.452651600004174
+        ],
+        "f1": [
+          0.6974789915966386,
+          0.4957983193277311,
+          0.5555555555555555,
+          0.5555555555555555,
+          0.625
+        ],
+        "per_class_accuracy": {
+          "cat": 0.6,
+          "dog": 1.0
+        },
+        "precision": [
+          0.7,
+          0.5285714285714286,
+          0.5625,
+          0.5625,
+          0.6666666666666666
+        ],
+        "recall": [
+          0.85,
+          0.55,
+          0.6,
+          0.6,
+          0.8
+        ],
+        "train_accuracy": [
+          0.6666666666666666,
+          0.75,
+          0.8541666666666666,
+          0.8958333333333334,
+          0.7916666666666666
+        ],
+        "train_loss": [
+          0.6375025312105814,
+          0.5658354163169861,
+          0.4775286018848419,
+          0.4260837435722351,
+          0.4416223367055257
+        ],
+        "val_accuracy": [
+          0.75,
+          0.5833333333333334,
+          0.6666666666666666,
+          0.6666666666666666,
+          0.6666666666666666
+        ],
+        "val_loss": [
+          0.6789040565490723,
+          0.6363319754600525,
+          0.653010368347168,
+          0.6387909054756165,
+          0.6466884016990662
+        ]
+      },
+      "model_id": "aac9eba6350541d39f9fb0bf598586be",
+      "owner": "person1",
+      "progress": 100.0,
+      "status": "completed",
+      "updated_at": "2026-05-20T17:59:24.324867+00:00"
+    },
     "a9a8474de2a24addb8ea580287b2f97f": {
       "config": {
         "batch_size": 16,

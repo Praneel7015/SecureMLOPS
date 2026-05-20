@@ -160,6 +160,95 @@ export type TrainingModel = {
   file_name?: string;
 };
 
+export type SecurityEvent = {
+  id: string;
+  timestamp: string;
+  severity: 'INFO' | 'WARNING' | 'HIGH' | 'CRITICAL' | string;
+  event_type: string;
+  source: string;
+  title: string;
+  description: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type DashboardMetrics = {
+  total_inferences: number;
+  high_risk_events: number;
+  drift_alerts: number;
+  models_registered: number;
+  active_training_jobs: number;
+  last_training_accuracy?: number | null;
+  average_drift_score: number;
+  severity_counts: Record<string, number>;
+  total_events: number;
+};
+
+export type DashboardTrainingJob = {
+  job_id: string;
+  dataset_id?: string;
+  status?: string;
+  model_type?: string;
+  epochs?: number;
+  current_epoch?: number;
+  validation_accuracy?: number | null;
+  created_at?: string;
+  updated_at?: string;
+  model_id?: string | null;
+};
+
+export type DashboardModel = {
+  model_id: string;
+  model_type?: string;
+  model_label?: string;
+  class_names?: string[];
+  num_classes?: number;
+  created_at?: string;
+  file_name?: string;
+  inference_ready?: boolean;
+  metrics?: Record<string, unknown>;
+};
+
+export type SystemStatus = {
+  monitoring_status: string;
+  drift_monitoring_status: string;
+  security_engine_status: string;
+  active_training_jobs: number;
+  last_inference_at?: string | null;
+  last_drift_event_at?: string | null;
+  last_security_event_at?: string | null;
+};
+
+export type DashboardSummary = {
+  metrics: DashboardMetrics;
+  recent_training: DashboardTrainingJob[];
+  recent_models: DashboardModel[];
+  system_status: SystemStatus;
+};
+
+export type SecurityEventPagination = {
+  page: number;
+  page_size: number;
+  total: number;
+  total_pages: number;
+  has_more: boolean;
+  has_new?: boolean;
+};
+
+export type SecurityEventFilters = {
+  severity?: string;
+  event_type?: string;
+  source?: string;
+  model?: string;
+  category?: string;
+  search?: string;
+  date_from?: string;
+  date_to?: string;
+  page?: number;
+  page_size?: number;
+  since_id?: string;
+  order?: string;
+};
+
 export async function apiLogin(username: string, password: string) {
   const response = await fetch('/login', {
     method: 'POST',
@@ -355,4 +444,94 @@ export async function apiCurrentUser() {
 
   const data = (await response.json()) as { success: boolean; username?: string };
   return data.username ?? null;
+}
+
+function buildQuery(params: Record<string, string | number | undefined>) {
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== '') {
+      search.set(key, String(value));
+    }
+  });
+  const query = search.toString();
+  return query ? `?${query}` : '';
+}
+
+export async function apiGetDashboardSummary() {
+  const response = await fetch('/api/dashboard/summary', {
+    method: 'GET',
+    credentials: 'include',
+    headers: { Accept: 'application/json' },
+  });
+  const data = (await response.json()) as ApiResponse<{ summary?: DashboardSummary }>;
+  return { ok: response.ok, status: response.status, ...data };
+}
+
+export async function apiGetDashboardActivity(limit = 20) {
+  const response = await fetch(`/api/dashboard/activity${buildQuery({ limit })}`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: { Accept: 'application/json' },
+  });
+  const data = (await response.json()) as ApiResponse<{ activity?: SecurityEvent[] }>;
+  return { ok: response.ok, status: response.status, ...data };
+}
+
+export async function apiGetDashboardSecuritySummary(limit = 10) {
+  const response = await fetch(`/api/dashboard/security-summary${buildQuery({ limit })}`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: { Accept: 'application/json' },
+  });
+  const data = (await response.json()) as ApiResponse<{ events?: SecurityEvent[] }>;
+  return { ok: response.ok, status: response.status, ...data };
+}
+
+export async function apiGetDashboardStatus() {
+  const response = await fetch('/api/dashboard/status', {
+    method: 'GET',
+    credentials: 'include',
+    headers: { Accept: 'application/json' },
+  });
+  const data = (await response.json()) as ApiResponse<{ status?: SystemStatus }>;
+  return { ok: response.ok, status: response.status, ...data };
+}
+
+export async function apiGetSecurityEvents(filters: SecurityEventFilters = {}) {
+  const response = await fetch(`/api/security/events${buildQuery(filters)}`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: { Accept: 'application/json' },
+  });
+  const data = (await response.json()) as ApiResponse<{
+    events?: SecurityEvent[];
+    pagination?: SecurityEventPagination;
+  }>;
+  return { ok: response.ok, status: response.status, ...data };
+}
+
+export async function apiExportSecurityEvents(
+  format: 'json' | 'csv',
+  filters: SecurityEventFilters = {},
+) {
+  const response = await fetch(
+    `/api/security/events/export${buildQuery({ ...filters, format })}`,
+    {
+      method: 'GET',
+      credentials: 'include',
+    },
+  );
+  if (!response.ok) {
+    throw new Error('Export failed.');
+  }
+  const blob = await response.blob();
+  const disposition = response.headers.get('Content-Disposition') || '';
+  const match = disposition.match(/filename=([^;]+)/);
+  const filename = match?.[1]?.replace(/"/g, '') || `security_events.${format}`;
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
 }

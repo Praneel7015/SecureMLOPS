@@ -11,6 +11,7 @@ import torch.nn.functional as F
 from torch.optim import Adam
 
 from core.runtime import get_device
+from telemetry.events import EventSeverity, EventSource, EventType, emit_event
 from training import progress_tracker
 from training.config import SUPPORTED_MODELS
 from training.dataset_loader import build_dataloaders, load_datasets
@@ -194,8 +195,32 @@ def run_training_job(job_id: str, dataset_dir: str, config: dict[str, Any], owne
             progress=100.0,
         )
         progress_tracker.append_log(job_id, "Training completed successfully.")
+        emit_event(
+            severity=EventSeverity.INFO,
+            event_type=EventType.TRAINING_COMPLETED,
+            source=EventSource.TRAINING,
+            title="Training completed",
+            description=f"Job {job_id} finished with val_acc={val_accuracy:.4f}.",
+            metadata={
+                "job_id": job_id,
+                "model_id": model_metadata["model_id"],
+                "model_type": model_type,
+                "validation_accuracy": val_accuracy,
+                "epochs": epochs,
+            },
+            owner=owner,
+        )
 
     except Exception as exc:
         logger.exception("Training job failed: %s", exc)
         progress_tracker.update_job(job_id, status="failed", error=str(exc))
         progress_tracker.append_log(job_id, f"Training failed: {exc}")
+        emit_event(
+            severity=EventSeverity.HIGH,
+            event_type=EventType.TRAINING_FAILED,
+            source=EventSource.TRAINING,
+            title="Training failed",
+            description=str(exc),
+            metadata={"job_id": job_id, "model_type": config.get("model_type")},
+            owner=owner,
+        )

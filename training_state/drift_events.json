@@ -713,6 +713,20 @@
       "severity": "HIGH",
       "status": "Distribution shift detected",
       "timestamp": "2026-05-18T18:40:09.379959+00:00"
+    },
+    {
+      "distance": 0.213,
+      "filename": "20260520224934_cat.jpg",
+      "model_name": "resnet18_20260514164105_05a20893.pt",
+      "model_type": "resnet18",
+      "owner": "person1",
+      "projection_x": -4.80786216539488,
+      "projection_y": 1.9119717848121602,
+      "reference": "resnet18_baseline_d4c20909063b490c8202c1f8b9cf7d8a.json",
+      "score": 0.69,
+      "severity": "MEDIUM",
+      "status": "Moderate drift detected",
+      "timestamp": "2026-05-20T17:19:40.376480+00:00"
     }
   ]
 }

@@ -1,43 +1,87 @@
 from __future__ import annotations
 
-import json
-from datetime import datetime, timezone
 from typing import Any
 
-from training.config import DRIFT_EVENTS_PATH, ensure_training_dirs
-
-
-def _load_events() -> list[dict[str, Any]]:
-    if not DRIFT_EVENTS_PATH.exists():
-        return []
-    try:
-        payload = json.loads(DRIFT_EVENTS_PATH.read_text(encoding="utf-8"))
-        return payload.get("events", [])
-    except Exception:
-        return []
-
-
-def _write_events(events: list[dict[str, Any]]) -> None:
-    payload = {"events": events[-200:]}
-    DRIFT_EVENTS_PATH.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+from telemetry.events import (
+    EventSeverity,
+    EventSource,
+    EventType,
+    emit_event,
+    severity_from_drift,
+)
+from telemetry.queries import query_events
 
 
 def record_event(event: dict[str, Any]) -> None:
-    ensure_training_dirs()
-    events = _load_events()
-    events.append({
-        **event,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    })
-    _write_events(events)
+    """Record a drift event through the centralized telemetry service."""
+    severity = event.get("severity", "LOW")
+    drift_score = event.get("score")
+    status = event.get("status", "")
+
+    if severity == "HIGH":
+        event_type = EventType.DRIFT_THRESHOLD_EXCEEDED
+        title = "Drift threshold exceeded"
+    elif severity == "MEDIUM":
+        event_type = EventType.DRIFT_HIGH_WARNING
+        title = "High drift warning"
+    else:
+        event_type = EventType.DRIFT_RECORDED
+        title = "Drift event recorded"
+
+    metadata = {
+        "drift_score": drift_score,
+        "severity": severity,
+        "status": status,
+        "distance": event.get("distance"),
+        "reference": event.get("reference"),
+        "model_name": event.get("model_name"),
+        "model_type": event.get("model_type"),
+        "projection_x": event.get("projection_x"),
+        "projection_y": event.get("projection_y"),
+        "filename": event.get("filename"),
+        "owner": event.get("owner"),
+    }
+    metadata = {k: v for k, v in metadata.items() if v is not None}
+
+    emit_event(
+        severity=severity_from_drift(severity),
+        event_type=event_type,
+        source=EventSource.DRIFT,
+        title=title,
+        description=status or title,
+        metadata=metadata,
+        owner=event.get("owner"),
+    )
 
 
 def list_events(limit: int = 50, owner: str | None = None) -> list[dict[str, Any]]:
-    ensure_training_dirs()
-    events = _load_events()
-    if owner:
-        events = [event for event in events if event.get("owner") == owner]
-    return list(reversed(events[-limit:]))
+    """List drift events from centralized telemetry (backward compatible shape)."""
+    result = query_events(
+        category="drift",
+        owner=owner,
+        page_size=limit,
+        page=1,
+    )
+    events = []
+    for event in result["events"]:
+        meta = event.get("metadata") or {}
+        events.append(
+            {
+                "timestamp": event["timestamp"],
+                "score": meta.get("drift_score"),
+                "severity": meta.get("severity") or event["severity"],
+                "status": meta.get("status") or event["description"],
+                "distance": meta.get("distance"),
+                "reference": meta.get("reference"),
+                "model_name": meta.get("model_name"),
+                "model_type": meta.get("model_type"),
+                "projection_x": meta.get("projection_x"),
+                "projection_y": meta.get("projection_y"),
+                "filename": meta.get("filename"),
+                "owner": meta.get("owner"),
+            }
+        )
+    return events
 
 
 def summarize_events(events: list[dict[str, Any]]) -> dict[str, Any]:

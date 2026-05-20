@@ -51,6 +51,6 @@ TODO.md
 #Trained models
 mobilenetv3_*.pt
 resnet18_*.pt
-efficientnet_b0_*.pt
+efficientnet-b0_*.pt
 
 Detection/security_models/*.pt

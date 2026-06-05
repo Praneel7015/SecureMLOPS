@@ -97,6 +97,8 @@ export async function apiBootstrap() {
   return (await response.json()) as {
     authenticated: boolean;
     username: string | null;
+    display_name?: string | null;
+    email?: string | null;
     sample_images: SampleImage[];
     max_upload_size_mb: number;
     max_dataset_upload_mb: number;
@@ -258,6 +260,29 @@ export async function apiLogin(username: string, password: string) {
       Accept: 'application/json',
     },
     body: JSON.stringify({ username, password }),
+  });
+
+  const data = (await response.json()) as ApiResponse<{ username?: string }>;
+  return {
+    success: response.ok && data.success,
+    message: data.message,
+    username: data.username,
+  };
+}
+
+export async function apiRegister(payload: {
+  name: string;
+  email: string;
+  password: string;
+}) {
+  const response = await fetch('/register', {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify(payload),
   });
 
   const data = (await response.json()) as ApiResponse<{ username?: string }>;

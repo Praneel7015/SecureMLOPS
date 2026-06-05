@@ -702,7 +702,7 @@ export function Dashboard({
       <div className="lg:hidden flex items-center justify-between p-4 border-b border-border bg-card">
         <div className="flex items-center gap-2">
           <Shield className="w-6 h-6 text-accent" />
-          <span className="font-mono">SecureMLOPS</span>
+          <span className="font-mono">Echelon</span>
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
@@ -759,7 +759,7 @@ export function Dashboard({
       <div className="hidden lg:flex lg:flex-col lg:w-64 border-r border-sidebar-border bg-sidebar p-4">
         <div className="flex items-center gap-2 mb-8">
           <Shield className="w-8 h-8 text-accent" />
-          <span className="font-mono">SecureMLOPS</span>
+          <span className="font-mono">Echelon</span>
         </div>
 
         <nav className="flex-1 space-y-2">

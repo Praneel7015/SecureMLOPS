@@ -13,7 +13,13 @@ load_dotenv()
 from flask import Flask, flash, g, redirect, render_template, request, send_from_directory, session, url_for, jsonify
 from werkzeug.utils import secure_filename
 
-from auth.auth_service import authenticate_user
+from auth.auth_service import (
+    authenticate_user,
+    register_user,
+    upsert_google_user,
+    get_display_name,
+    get_user,
+)
 from core.runtime import get_device
 from Detection.custom_pipeline import process_custom_image
 from Detection.model_loader import load_model as load_default_model
@@ -61,6 +67,40 @@ app.config["SECRET_KEY"] = os.environ.get("APP_SECRET_KEY", "mini-project-secret
 app.config["MAX_CONTENT_LENGTH"] = MAX_DATASET_UPLOAD_BYTES
 app.config["UPLOAD_FOLDER"] = str(UPLOAD_DIR)
 
+# ── Google OAuth (optional) ───────────────────────────────────────────────────
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "").strip()
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "").strip()
+# In dev the SPA runs on Vite (5173) and proxies to Flask, so the browser-facing
+# redirect URI must point at the Vite origin. Override per-environment via env.
+GOOGLE_REDIRECT_URI = os.environ.get(
+    "GOOGLE_REDIRECT_URI", "http://localhost:5173/auth/google/callback"
+).strip()
+# Frontend landing/home to return to after the OAuth round-trip.
+FRONTEND_HOME = os.environ.get("FRONTEND_HOME", "/").strip() or "/"
+
+oauth = None
+google_oauth = None
+if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET:
+    try:
+        from authlib.integrations.flask_client import OAuth
+
+        oauth = OAuth(app)
+        google_oauth = oauth.register(
+            name="google",
+            client_id=GOOGLE_CLIENT_ID,
+            client_secret=GOOGLE_CLIENT_SECRET,
+            server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+            client_kwargs={"scope": "openid email profile"},
+        )
+    except Exception as exc:  # pragma: no cover - config/runtime guard
+        google_oauth = None
+        print(f"  \033[93m! Google OAuth disabled: {exc}\033[0m")
+
+
+def _google_enabled() -> bool:
+    return google_oauth is not None
+
+
 rate_limiter = RateLimiter()
 configure_logging(BASE_DIR / "logs" / "security.log")
 init_event_store(BASE_DIR / "training_state" / "security_events.db")
@@ -99,7 +139,7 @@ def _status_color(code: int) -> str:
 
 def _startup_banner(host: str, port: int) -> None:
     print(f"\n{_CYAN}{_BOLD}┌───────────────────────────────────────────┐{_R}")
-    print(f"{_CYAN}{_BOLD}│        Secure ML Inference System         │{_R}")
+    print(f"{_CYAN}{_BOLD}│   Echelon · Security for ML Intelligence  │{_R}")
     print(f"{_CYAN}{_BOLD}└───────────────────────────────────────────┘{_R}")
     print(f"  {_GREEN}●{_R} Running on {_BOLD}http://{host}:{port}{_R}")
     print(f"  {_DIM}Model:  EfficientNet-B0 (ImageNet pretrained){_R}")
@@ -178,10 +218,14 @@ def react_vite_icon():
 @app.route("/api/bootstrap", methods=["GET"])
 def api_bootstrap():
     username = session.get("user")
+    record = get_user(username) if username else None
     return jsonify(
         {
             "authenticated": bool(username),
             "username": username,
+            "display_name": (record or {}).get("display_name") if record else username,
+            "email": (record or {}).get("email") if record else None,
+            "google_enabled": _google_enabled(),
             "sample_images": list_sample_images(),
             "max_upload_size_mb": MAX_IMAGE_UPLOAD_BYTES // (1024 * 1024),
             "max_dataset_upload_mb": MAX_DATASET_UPLOAD_BYTES // (1024 * 1024),
@@ -197,23 +241,91 @@ def api_bootstrap():
 def login():
     if request.is_json:
         payload = request.get_json(silent=True) or {}
-        username = str(payload.get("username", "")).strip()
+        identifier = str(payload.get("identifier") or payload.get("username") or "").strip()
         password = str(payload.get("password", ""))
     else:
-        username = request.form.get("username", "").strip()
+        identifier = (request.form.get("identifier") or request.form.get("username") or "").strip()
         password = request.form.get("password", "")
 
-    success, message = authenticate_user(username, password)
+    success, message, key = authenticate_user(identifier, password)
     if not success:
         if _wants_json():
             return jsonify({"success": False, "message": message}), 401
         return redirect(url_for("index", login_error=message))
 
-    session["user"] = username
-    _terminal_logger.info("LOGIN  user=%s ip=%s", username, request.remote_addr)
+    session["user"] = key
+    _terminal_logger.info("LOGIN  user=%s ip=%s", key, request.remote_addr)
     if _wants_json():
-        return jsonify({"success": True, "message": "Login successful.", "username": username})
+        return jsonify(
+            {
+                "success": True,
+                "message": "Login successful.",
+                "username": key,
+                "display_name": get_display_name(key),
+            }
+        )
     return redirect(url_for("index"))
+
+
+@app.route("/register", methods=["POST"])
+def register():
+    if request.is_json:
+        payload = request.get_json(silent=True) or {}
+    else:
+        payload = request.form
+    name = str(payload.get("name", "")).strip()
+    email = str(payload.get("email", "")).strip()
+    password = str(payload.get("password", ""))
+
+    success, message, key = register_user(name, email, password)
+    if not success:
+        if _wants_json():
+            return jsonify({"success": False, "message": message}), 400
+        return redirect(url_for("index", register_error=message))
+
+    # Sign the new user in immediately.
+    session["user"] = key
+    _terminal_logger.info("SIGNUP user=%s ip=%s", key, request.remote_addr)
+    if _wants_json():
+        return jsonify(
+            {
+                "success": True,
+                "message": "Welcome to Echelon.",
+                "username": key,
+                "display_name": get_display_name(key),
+            }
+        )
+    return redirect(url_for("index"))
+
+
+@app.route("/auth/google", methods=["GET"])
+def auth_google():
+    if not _google_enabled():
+        return redirect(f"{FRONTEND_HOME}?auth_error=google_not_configured")
+    return google_oauth.authorize_redirect(GOOGLE_REDIRECT_URI)
+
+
+@app.route("/auth/google/callback", methods=["GET"])
+def auth_google_callback():
+    if not _google_enabled():
+        return redirect(f"{FRONTEND_HOME}?auth_error=google_not_configured")
+    try:
+        token = google_oauth.authorize_access_token()
+        info = token.get("userinfo") or google_oauth.userinfo()
+    except Exception as exc:  # pragma: no cover - upstream/transport guard
+        _terminal_logger.info("GOOGLE auth failed: %s", exc)
+        return redirect(f"{FRONTEND_HOME}?auth_error=google_failed")
+
+    google_id = info.get("sub")
+    email = info.get("email")
+    name = info.get("name") or info.get("given_name")
+    if not google_id:
+        return redirect(f"{FRONTEND_HOME}?auth_error=google_failed")
+
+    key = upsert_google_user(google_id, email, name)
+    session["user"] = key
+    _terminal_logger.info("LOGIN  user=%s ip=%s (google)", key, request.remote_addr)
+    return redirect(FRONTEND_HOME)
 
 
 @app.route("/api/inference", methods=["POST"])

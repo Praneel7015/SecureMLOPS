@@ -40,7 +40,7 @@ export function Settings({ username, onLogout, onBack }: SettingsProps) {
             </button>
             <div className="flex items-center gap-2">
               <Shield className="w-6 h-6 text-accent" />
-              <span className="font-mono">SecureMLOPS Settings · {username}</span>
+              <span className="font-mono">Echelon Settings · {username}</span>
             </div>
           </div>
           <div className="flex items-center gap-3">

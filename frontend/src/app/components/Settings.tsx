@@ -1,6 +1,7 @@
 import { Shield, ArrowLeft, Save, Bell, Database, Lock, Zap, AlertTriangle, Clock, Server } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { ThemeToggle } from './ThemeToggle';
+import { Wordmark } from './brand/Wordmark';
 
 interface SettingsProps {
   username: string;
@@ -29,38 +30,46 @@ export function Settings({ username, onLogout, onBack }: SettingsProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b border-border bg-card">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+      <header className="sticky top-0 z-40 border-b border-border bg-card/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3.5">
+          <div className="flex items-center gap-3">
             <button
               onClick={onBack}
-              className="p-2 hover:bg-muted rounded-lg transition-colors"
+              className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              aria-label="Back to console"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="h-5 w-5" />
             </button>
-            <div className="flex items-center gap-2">
-              <Shield className="w-6 h-6 text-accent" />
-              <span className="font-mono">Echelon Settings · {username}</span>
-            </div>
+            <Wordmark size="sm" />
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <ThemeToggle />
             <button
               type="button"
               onClick={() => void onLogout()}
-              className="px-3 py-2 border border-border rounded-lg hover:bg-muted transition-colors"
+              className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               Sign out
             </button>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Settings Form */}
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="mx-auto max-w-5xl px-6 py-10">
+        <div className="mb-8">
+          <span className="eyebrow text-accent">Console / Settings</span>
+          <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-foreground">
+            Settings
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Signed in as <span className="font-mono text-foreground">{username}</span>
+          </p>
+        </div>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="rounded-lg border border-warning/20 bg-warning/10 px-4 py-3 text-warning">
-            Settings are displayed for preview only. Editing and persistence are not implemented yet.
+          <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>Settings are displayed for preview only. Editing and persistence are not implemented yet.</span>
           </div>
           <fieldset disabled className="space-y-6">
             {/* Grid Layout for Settings Cards */}

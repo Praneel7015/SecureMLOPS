@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useState, useRef } from 'react';
-import { Upload, Image as ImageIcon, CheckCircle2, XCircle, AlertCircle, ChevronDown, ChevronUp, Shield, Settings as SettingsIcon, LogOut, Menu, X, TrendingUp, FileCheck, Activity, Zap, Database, Lock, BarChart3, PlayCircle, Download, RefreshCw, History } from 'lucide-react';
+import { Upload, Image as ImageIcon, CheckCircle2, XCircle, AlertCircle, ChevronDown, ChevronUp, Shield, Settings as SettingsIcon, LogOut, Menu, X, TrendingUp, FileCheck, Activity, Zap, Database, Lock, BarChart3, PlayCircle, Download, RefreshCw, History, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
+import { Wordmark } from './brand/Wordmark';
 import {
   apiInference,
   apiUploadDataset,
@@ -89,6 +90,7 @@ export function Dashboard({
 }: DashboardProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedSample, setSelectedSample] = useState<string>('');
+  const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
   const [selectedModelFile, setSelectedModelFile] = useState<File | null>(null);
   const [activeSection, setActiveSection] = useState<'dashboard' | 'inference' | 'training' | 'monitoring' | 'logs'>('inference');
   const [isInputPanelOpen, setIsInputPanelOpen] = useState(true);
@@ -262,6 +264,30 @@ export function Dashboard({
   const handleModelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setSelectedModelFile(e.target.files[0]);
+    }
+  };
+
+  // Live preview of the image queued for inference (uploaded file or sample).
+  useEffect(() => {
+    if (!selectedFile) {
+      setFilePreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(selectedFile);
+    setFilePreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [selectedFile]);
+
+  const selectedSampleMeta = samples.find((s) => s.value === selectedSample) ?? null;
+  const previewUrl = filePreviewUrl ?? selectedSampleMeta?.url ?? null;
+  const previewName = selectedFile?.name ?? selectedSampleMeta?.label ?? null;
+  const previewKind = selectedFile ? 'Uploaded file' : selectedSampleMeta ? 'Sample image' : null;
+
+  const clearImageSelection = () => {
+    setSelectedFile(null);
+    setSelectedSample('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -696,19 +722,19 @@ export function Dashboard({
     );
   };
 
+  const userInitial = (username || 'U').trim().slice(0, 1).toUpperCase();
+
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-background">
       {/* Mobile Header */}
-      <div className="lg:hidden flex items-center justify-between p-4 border-b border-border bg-card">
-        <div className="flex items-center gap-2">
-          <Shield className="w-6 h-6 text-accent" />
-          <span className="font-mono">Echelon</span>
-        </div>
-        <div className="flex items-center gap-2">
+      <div className="lg:hidden sticky top-0 z-40 flex items-center justify-between border-b border-border bg-card/80 px-5 py-3.5 backdrop-blur-xl">
+        <Wordmark size="sm" />
+        <div className="flex items-center gap-1.5">
           <ThemeToggle />
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2 rounded-lg hover:bg-muted"
+            className="rounded-lg p-2 text-foreground hover:bg-muted"
+            aria-label="Toggle menu"
           >
             {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -717,102 +743,143 @@ export function Dashboard({
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 bg-background z-50 pt-16">
-          <div className="p-4 space-y-2">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveSection(item.id as typeof activeSection);
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
-                  activeSection === item.id ? 'bg-muted' : 'hover:bg-muted'
-                }`}
-              >
-                <item.icon className="w-5 h-5" />
-                <span>{item.label}</span>
-              </button>
-            ))}
+        <div className="lg:hidden fixed inset-0 z-50 bg-background px-5 pt-20">
+          <span className="eyebrow text-muted-foreground/60">Console</span>
+          <div className="mt-4 space-y-1">
+            {navItems.map((item) => {
+              const active = activeSection === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveSection(item.id as typeof activeSection);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`group flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors ${
+                    active
+                      ? 'bg-secondary text-foreground'
+                      : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
+                  }`}
+                >
+                  <item.icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+                  <span className="text-sm font-medium">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-4 space-y-1 border-t border-border pt-4">
             <button
               onClick={() => {
                 onNavigateToSettings();
                 setIsMobileMenuOpen(false);
               }}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors text-left"
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground"
             >
-              <SettingsIcon className="w-5 h-5" />
-              <span>Settings</span>
+              <SettingsIcon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+              <span className="text-sm font-medium">Settings</span>
             </button>
             <button
               onClick={onLogout}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted text-destructive transition-colors text-left"
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
             >
-              <LogOut className="w-5 h-5" />
-              <span>Logout</span>
+              <LogOut className="h-[18px] w-[18px]" strokeWidth={1.75} />
+              <span className="text-sm font-medium">Sign out</span>
             </button>
           </div>
         </div>
       )}
 
       {/* Sidebar - Desktop */}
-      <div className="hidden lg:flex lg:flex-col lg:w-64 border-r border-sidebar-border bg-sidebar p-4">
-        <div className="flex items-center gap-2 mb-8">
-          <Shield className="w-8 h-8 text-accent" />
-          <span className="font-mono">Echelon</span>
+      <aside className="hidden shrink-0 border-r border-sidebar-border bg-sidebar lg:flex lg:w-64 lg:flex-col">
+        <div className="flex h-16 items-center border-b border-sidebar-border px-6">
+          <Wordmark size="md" />
         </div>
 
-        <nav className="flex-1 space-y-2">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveSection(item.id as typeof activeSection)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
-                activeSection === item.id ? 'bg-sidebar-accent' : 'hover:bg-sidebar-accent'
-              }`}
-            >
-              <item.icon className="w-5 h-5" />
-              <span>{item.label}</span>
-            </button>
-          ))}
+        <nav className="flex-1 px-4 py-6">
+          <span className="eyebrow px-3 text-muted-foreground/50">Console</span>
+          <div className="mt-3 space-y-1">
+            {navItems.map((item) => {
+              const active = activeSection === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveSection(item.id as typeof activeSection)}
+                  className={`group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
+                    active
+                      ? 'bg-sidebar-accent text-foreground'
+                      : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground'
+                  }`}
+                >
+                  {active && (
+                    <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-accent" />
+                  )}
+                  <item.icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+                  <span className="text-sm font-medium">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </nav>
 
-        <div className="border-t border-sidebar-border pt-4 space-y-2">
-          <div className="flex items-center justify-between px-4 py-2">
-            <span className="font-mono">Theme</span>
-            <ThemeToggle />
+        <div className="space-y-3 border-t border-sidebar-border p-4">
+          <div className="flex items-center gap-3 px-2">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent font-display text-sm font-semibold text-accent-foreground">
+              {userInitial}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-foreground">{username}</p>
+              <p className="eyebrow mt-0.5 text-muted-foreground/50">Operator</p>
+            </div>
           </div>
-          <button
-            onClick={onNavigateToSettings}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-sidebar-accent transition-colors text-left"
-          >
-            <SettingsIcon className="w-5 h-5" />
-            <span>Settings</span>
-          </button>
-          <button
-            onClick={onLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-sidebar-accent text-destructive transition-colors text-left"
-          >
-            <LogOut className="w-5 h-5" />
-            <span>Logout</span>
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={onNavigateToSettings}
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
+            >
+              <SettingsIcon className="h-4 w-4" /> Settings
+            </button>
+            <ThemeToggle />
+            <button
+              onClick={onLogout}
+              aria-label="Sign out"
+              className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
         </div>
-      </div>
+      </aside>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Input Panel */}
         {activeSection === 'inference' && (
-          <div className={`input-panel bg-card border-b lg:border-b-0 lg:border-r border-border transition-all duration-300 ${isInputPanelOpen ? 'lg:w-96' : 'lg:w-0'} overflow-hidden`}>
-            <div className="p-6 space-y-6">
+          <div className={`input-panel shrink-0 bg-card border-b lg:border-b-0 lg:border-r border-border transition-all duration-300 ${isInputPanelOpen ? 'lg:w-96' : 'lg:w-14'} overflow-hidden`}>
+            {/* Collapsed rail (desktop only) — always offers a way to reopen */}
+            <div className={`${isInputPanelOpen ? 'hidden' : 'hidden lg:flex'} flex-col items-center gap-4 pt-5`}>
+              <button
+                onClick={() => setIsInputPanelOpen(true)}
+                aria-label="Open inference input"
+                title="Open inference input"
+                className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <PanelLeftOpen className="h-5 w-5" />
+              </button>
+              <span className="eyebrow rotate-180 text-muted-foreground/60 [writing-mode:vertical-rl]">
+                Inference Input
+              </span>
+            </div>
+
+            <div className={`p-6 space-y-6 ${isInputPanelOpen ? '' : 'lg:hidden'}`}>
               <div className="flex items-center justify-between">
                 <h2 className="text-foreground">Inference Input</h2>
                 <button
-                  id="toggleInputPanel"
-                  onClick={() => setIsInputPanelOpen(!isInputPanelOpen)}
-                  className="hidden lg:block p-1 hover:bg-muted rounded"
+                  onClick={() => setIsInputPanelOpen(false)}
+                  aria-label="Collapse panel"
+                  title="Collapse panel"
+                  className="hidden rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:block"
                 >
-                  {isInputPanelOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  <PanelLeftClose className="h-5 w-5" />
                 </button>
               </div>
 
@@ -880,6 +947,40 @@ export function Dashboard({
                   </div>
                 </div>
 
+                {/* Selected image preview */}
+                {previewUrl && (
+                  <div>
+                    <div className="mb-2 flex items-center justify-between">
+                      <label className="text-foreground">Preview</label>
+                      <button
+                        type="button"
+                        onClick={clearImageSelection}
+                        className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-destructive"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                        Clear
+                      </button>
+                    </div>
+                    <div className="overflow-hidden rounded-lg border border-border bg-input-background">
+                      <div className="flex items-center justify-center bg-[length:16px_16px] bg-[linear-gradient(45deg,var(--muted)_25%,transparent_25%),linear-gradient(-45deg,var(--muted)_25%,transparent_25%),linear-gradient(45deg,transparent_75%,var(--muted)_75%),linear-gradient(-45deg,transparent_75%,var(--muted)_75%)] [background-position:0_0,0_8px,8px_-8px,-8px_0]">
+                        <img
+                          src={previewUrl}
+                          alt={previewName ?? 'Selected image'}
+                          className="max-h-56 w-full object-contain"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between gap-2 border-t border-border px-3 py-2">
+                        <span className="truncate font-mono text-xs text-foreground" title={previewName ?? ''}>
+                          {previewName}
+                        </span>
+                        {previewKind && (
+                          <span className="eyebrow shrink-0 text-muted-foreground/60">{previewKind}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Optional Model Upload */}
                 <div>
                   <label className="block mb-2 text-foreground">Optional Model Checkpoint</label>
@@ -921,7 +1022,7 @@ export function Dashboard({
         )}
 
         {/* Main Content Area */}
-        <div className="flex-1 overflow-auto p-6 space-y-6">
+        <div className="flex-1 overflow-auto px-6 py-8 lg:px-10 lg:py-10 space-y-8">
           {activeSection === 'dashboard' && (
             <DashboardOverview username={username} refreshToken={dashboardRefreshToken} />
           )}

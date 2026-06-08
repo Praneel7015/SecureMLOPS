@@ -1,6 +1,6 @@
 {
   "files": {
-    "Detection/model_loader.py": "ac2a1adcb8cff7a9e3222ae7375789165a6dc924bee18e33c47698943215ae91",
+    "Detection/model_loader.py": "29c78e0afeb18264c887a7a56395d6e073a484922eb5d75f9b1c44abe49d5b8a",
     "Detection/predictor.py": "f9bcbc31c1b77b02c9591d5ede62f02265581dfe59847942beaee36a7bc45d15"
   },
   "model_weights": {

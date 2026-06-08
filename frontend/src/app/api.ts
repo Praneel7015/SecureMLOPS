@@ -45,6 +45,11 @@ export type AnalysisResult = {
   verdict?: string;
   anomaly?: boolean;
   adversarial?: boolean;
+  runtime_poison_suspicion?: boolean;
+  runtime_poison_probability?: number | null;
+  runtime_poison_severity?: string;
+  runtime_poison_status?: string;
+  runtime_poison_available?: boolean;
   issues?: string[];
   drift_score?: number | null;
   drift_severity?: string;
@@ -107,6 +112,33 @@ export async function apiBootstrap() {
   };
 }
 
+export type FlaggedSample = {
+  relative_path: string;
+  filename: string;
+  class_name: string;
+  poison_probability: number;
+  severity: string;
+  preview_url?: string;
+};
+
+export type DatasetSecurityReport = {
+  scan_status?: string;
+  scan_available?: boolean;
+  images_scanned?: number;
+  suspicious_count?: number;
+  flagged_ratio?: number;
+  flagged_samples?: FlaggedSample[];
+  average_poison_probability?: number | null;
+  highest_poison_probability?: number | null;
+  dataset_risk_level?: string;
+  training_decision?: 'allow' | 'warn' | 'block' | string;
+  allow_override?: boolean;
+  recommendation?: string;
+  detector_type?: string;
+  sample_threshold?: number;
+  scan_message?: string;
+};
+
 export type DatasetSummary = {
   dataset_id: string;
   class_names: string[];
@@ -114,6 +146,7 @@ export type DatasetSummary = {
   class_distribution?: Record<string, number>;
   source_name?: string;
   created_at?: string;
+  poisoning_scan?: DatasetSecurityReport;
 };
 
 export type TrainingJob = {
@@ -181,6 +214,13 @@ export type DashboardMetrics = {
   active_training_jobs: number;
   last_training_accuracy?: number | null;
   average_drift_score: number;
+  poisoning_alerts?: number;
+  poisoning_high_risk_events?: number;
+  poisoning_scan_activity?: number;
+  poisoning_detector_available?: boolean;
+  suspicious_dataset_uploads?: number;
+  high_risk_training_attempts?: number;
+  poisoned_sample_count?: number;
   severity_counts: Record<string, number>;
   total_events: number;
 };
@@ -217,7 +257,9 @@ export type SystemStatus = {
   active_training_jobs: number;
   last_inference_at?: string | null;
   last_drift_event_at?: string | null;
+  last_poisoning_event_at?: string | null;
   last_security_event_at?: string | null;
+  poisoning_detector_status?: string;
 };
 
 export type DashboardSummary = {
@@ -389,7 +431,10 @@ export async function apiUploadDataset(datasetFile: File) {
     body: formData,
   });
 
-  const data = (await response.json()) as ApiResponse<{ dataset?: DatasetSummary }>;
+  const data = (await response.json()) as ApiResponse<{
+    dataset?: DatasetSummary;
+    security_report?: DatasetSecurityReport;
+  }>;
   return { ok: response.ok, ...data };
 }
 
@@ -411,6 +456,7 @@ export async function apiStartTraining(payload: {
   batch_size: number;
   learning_rate: number;
   freeze_backbone: boolean;
+  security_override?: boolean;
 }) {
   const response = await fetch('/api/training/start', {
     method: 'POST',
@@ -419,7 +465,12 @@ export async function apiStartTraining(payload: {
     body: JSON.stringify(payload),
   });
 
-  const data = (await response.json()) as ApiResponse<{ job?: TrainingJob }>;
+  const data = (await response.json()) as ApiResponse<{
+    job?: TrainingJob;
+    security_report?: DatasetSecurityReport;
+    security_message?: string;
+    requires_override?: boolean;
+  }>;
   return { ok: response.ok, ...data };
 }
 

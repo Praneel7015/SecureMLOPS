@@ -23,6 +23,7 @@ class EventSource:
     INFERENCE = "inference"
     DRIFT = "drift"
     ADVERSARIAL = "adversarial"
+    POISONING = "poisoning"
     INTEGRITY = "integrity"
     TRAINING = "training"
     VALIDATION = "validation"
@@ -49,6 +50,21 @@ class EventType:
     ADVERSARIAL_BLOCKED = "adversarial.blocked"
     ADVERSARIAL_ALLOWED = "adversarial.allowed"
     ADVERSARIAL_ESCALATION = "adversarial.escalation"
+
+    # Poisoning
+    POISONING_DETECTED = "poisoning.detected"
+    POISONING_HIGH_RISK = "poisoning.high_risk"
+    POISONING_UNAVAILABLE = "poisoning.unavailable"
+    POISONING_UNSUPPORTED_ARCHITECTURE = "poisoning.unsupported_architecture"
+    POISONING_DETECTOR_FAILURE = "poisoning.detector_failure"
+    POISONING_EMBEDDING_MISMATCH = "poisoning.embedding_mismatch"
+    POISONING_DIMENSION_MISMATCH = "poisoning.dimension_mismatch"
+    POISONING_SCAN_COMPLETED = "poisoning.scan_completed"
+    POISONING_DATASET_SCAN_STARTED = "poisoning.dataset_scan_started"
+    POISONING_DATASET_SCAN_COMPLETED = "poisoning.dataset_scan_completed"
+    POISONING_SUSPICIOUS_DATASET = "poisoning.suspicious_dataset"
+    POISONING_TRAINING_BLOCKED = "poisoning.training_blocked"
+    POISONING_TRAINING_OVERRIDE = "poisoning.training_override"
 
     # Integrity
     INTEGRITY_SUCCESS = "integrity.validation_success"
@@ -173,6 +189,13 @@ def emit_inference_event(result: dict[str, Any], username: str | None = None) ->
         "drift_severity": result.get("drift_severity"),
         "adversarial": result.get("adversarial"),
         "anomaly": result.get("anomaly"),
+        "poisoning": result.get("poisoning"),
+        "poisoning_probability": result.get("poisoning_probability"),
+        "poisoning_severity": result.get("poisoning_severity"),
+        "poisoning_available": result.get("poisoning_available"),
+        "runtime_poison_suspicion": result.get("runtime_poison_suspicion"),
+        "runtime_poison_probability": result.get("runtime_poison_probability"),
+        "runtime_poison_severity": result.get("runtime_poison_severity"),
         "verdict": result.get("verdict"),
         "session_id": result.get("session_id"),
     }
@@ -216,6 +239,47 @@ def emit_inference_event(result: dict[str, Any], username: str | None = None) ->
             source=EventSource.ADVERSARIAL,
             title="Adversarial input suspected",
             description="Adversarial detector flagged the input.",
+            metadata=metadata,
+            owner=username,
+        )
+
+    if result.get("runtime_poison_suspicion"):
+        emit_event(
+            severity=EventSeverity.WARNING,
+            event_type=EventType.POISONING_DETECTED,
+            source=EventSource.POISONING,
+            title="Runtime poisoning suspicion",
+            description=result.get("runtime_poison_status") or "Optional runtime suspicion signal triggered.",
+            metadata=metadata,
+            owner=username,
+        )
+    elif result.get("poisoning"):
+        emit_event(
+            severity=EventSeverity.HIGH,
+            event_type=EventType.POISONING_DETECTED,
+            source=EventSource.POISONING,
+            title="Potential poisoned sample detected",
+            description=result.get("poisoning_status") or "Poisoning detector flagged the input.",
+            metadata=metadata,
+            owner=username,
+        )
+        if str(result.get("poisoning_severity", "")).upper() == "HIGH":
+            emit_event(
+                severity=EventSeverity.HIGH,
+                event_type=EventType.POISONING_HIGH_RISK,
+                source=EventSource.POISONING,
+                title="High poison risk event",
+                description=f"Poison probability {result.get('poisoning_probability')}",
+                metadata=metadata,
+                owner=username,
+            )
+    elif result.get("runtime_poison_available") is False and result.get("runtime_poison_status"):
+        emit_event(
+            severity=EventSeverity.INFO,
+            event_type=EventType.POISONING_UNAVAILABLE,
+            source=EventSource.POISONING,
+            title="Runtime poisoning suspicion unavailable",
+            description=str(result.get("runtime_poison_status")),
             metadata=metadata,
             owner=username,
         )

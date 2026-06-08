@@ -34,6 +34,16 @@ def compute_input_risk(ml_result: dict) -> float:
     if ml_result["anomaly"]:
         risk += 0.20
 
+    if ml_result.get("poisoning") or ml_result.get("poisoning_flag"):
+        risk += 0.08
+    elif ml_result.get("poisoning_severity") == "HIGH":
+        risk += 0.05
+
+    runtime_probability = float(ml_result.get("runtime_poison_probability") or 0.0)
+    if ml_result.get("runtime_poison_suspicion"):
+        risk += 0.08
+    risk += 0.04 * runtime_probability
+
     # Fine-grained adjustments — reduced from original 0.20 to 0.10 each
     anomaly_score = ml_result["anomaly_score"] / 3.0
     entropy = ml_result["normalized_entropy"]

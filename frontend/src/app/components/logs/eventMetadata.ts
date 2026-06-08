@@ -87,6 +87,7 @@ const buildInferenceFields = (meta: Record<string, unknown>): EventFieldProps[] 
     field('Model Source', meta.model_source, { variant: 'badge' }),
     field('Risk Level', meta.risk_level, { variant: 'badge' }),
     field('Drift Score', meta.drift_score, { variant: 'metric' }),
+    field('Runtime Poison Suspicion', meta.runtime_poison_suspicion, { variant: 'badge' }),
     field('Session ID', meta.session_id, { variant: 'badge' }),
     field('Filename', meta.filename),
   ].filter(Boolean) as EventFieldProps[];
@@ -134,6 +135,32 @@ const buildAdversarialFields = (meta: Record<string, unknown>, event: SecurityEv
     field('Final Decision', pick(meta, ['verdict', 'status']) || event.description, { variant: 'badge' }),
     field('Model', pick(meta, ['model_name', 'model_type'])),
     field('Prediction', meta.prediction),
+  ].filter(Boolean) as EventFieldProps[];
+};
+
+const buildPoisoningFields = (meta: Record<string, unknown>, event: SecurityEvent): EventFieldProps[] => {
+  const probability = pick(meta, ['poisoning_probability', 'probability']);
+  return [
+    field('Poison Probability', probability !== undefined ? asPercent(probability) : undefined, {
+      variant: 'metric',
+      highlight: true,
+    }),
+    field('Severity', pick(meta, ['poisoning_severity', 'severity']), { variant: 'badge', highlight: true }),
+    field('Detector', pick(meta, ['poisoning_detector', 'detector_type']) || 'MLP'),
+    field('Embedding Source', meta.poisoning_embedding_source || 'ResNet18 Multi-Layer'),
+    field(
+      'Availability',
+      meta.poisoning_available === false ? 'Unavailable' : meta.poisoning_available === true ? 'Available' : undefined,
+      { variant: 'badge' },
+    ),
+    field('Status', pick(meta, ['poisoning_status', 'status']) || event.description),
+    field('Model', pick(meta, ['model_name', 'model_type'])),
+    field('Filename', meta.filename, { variant: 'badge' }),
+    field('Images Scanned', meta.images_scanned, { variant: 'metric' }),
+    field('Suspicious Count', meta.suspicious_count, { variant: 'metric', highlight: true }),
+    field('Dataset Risk', pick(meta, ['dataset_risk_level', 'risk_level']), { variant: 'badge' }),
+    field('Training Decision', meta.training_decision, { variant: 'badge' }),
+    field('Dataset ID', meta.dataset_id, { variant: 'badge' }),
   ].filter(Boolean) as EventFieldProps[];
 };
 
@@ -193,6 +220,7 @@ export const getEventMetadataFields = (event: SecurityEvent): EventFieldProps[] 
   else if (type.startsWith('training.')) fields = buildTrainingFields(meta);
   else if (type.startsWith('integrity.')) fields = buildIntegrityFields(meta, event);
   else if (type.startsWith('adversarial.')) fields = buildAdversarialFields(meta, event);
+  else if (type.startsWith('poisoning.')) fields = buildPoisoningFields(meta, event);
   else if (type.startsWith('validation.')) fields = buildValidationFields(meta, event);
   else if (type.startsWith('system.')) fields = buildSystemFields(meta, event);
   else fields = buildGenericFields(meta, new Set());

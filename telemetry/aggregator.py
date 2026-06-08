@@ -9,6 +9,8 @@ from telemetry.queries import CATEGORY_EVENT_TYPES, SECURITY_EVENT_TYPES
 from training.progress_tracker import list_jobs
 from training.registry import list_models
 
+from Detection.poisoning import detector_runtime_status
+
 
 def _count_by_severity(owner: str | None = None) -> dict[str, int]:
     owner_clause = ""
@@ -50,6 +52,24 @@ def _count_event_types(event_types: tuple[str, ...], owner: str | None = None) -
         params.append(owner)
     where = "WHERE " + " AND ".join(clauses)
     return int(execute_scalar(f"SELECT COUNT(*) FROM security_events {where}", tuple(params)) or 0)
+
+
+def _sum_poisoned_samples(owner: str | None = None) -> int:
+    owner_clause = ""
+    params: tuple[Any, ...] = ()
+    if owner:
+        owner_clause = "AND json_extract(metadata_json, '$.owner') = ?"
+        params = (owner,)
+    value = execute_scalar(
+        f"""
+        SELECT COALESCE(SUM(CAST(json_extract(metadata_json, '$.suspicious_count') AS INTEGER)), 0)
+        FROM security_events
+        WHERE event_type = 'poisoning.suspicious_dataset'
+          {owner_clause}
+        """,
+        params,
+    )
+    return int(value or 0)
 
 
 def _avg_drift_score(owner: str | None = None) -> float:
@@ -117,7 +137,9 @@ def get_system_status(owner: str | None = None) -> dict[str, Any]:
         "active_training_jobs": len(active_jobs),
         "last_inference_at": _last_timestamp(CATEGORY_EVENT_TYPES["inference"], owner),
         "last_drift_event_at": _last_timestamp(CATEGORY_EVENT_TYPES["drift"], owner),
+        "last_poisoning_event_at": _last_timestamp(CATEGORY_EVENT_TYPES["poisoning"], owner),
         "last_security_event_at": _last_timestamp(SECURITY_EVENT_TYPES, owner),
+        "poisoning_detector_status": "active" if detector_runtime_status().get("available") else "unavailable",
     }
 
 
@@ -149,6 +171,26 @@ def get_dashboard_summary(owner: str | None = None) -> dict[str, Any]:
             "active_training_jobs": len(active_jobs),
             "last_training_accuracy": last_training_accuracy,
             "average_drift_score": _avg_drift_score(owner),
+            "poisoning_alerts": _count_event_types(
+                (
+                    "poisoning.suspicious_dataset",
+                    "poisoning.detected",
+                    "poisoning.high_risk",
+                ),
+                owner,
+            ),
+            "poisoning_high_risk_events": _count_event_types(("poisoning.high_risk",), owner),
+            "poisoning_scan_activity": _count_event_types(
+                ("poisoning.dataset_scan_completed", "poisoning.dataset_scan_started"),
+                owner,
+            ),
+            "suspicious_dataset_uploads": _count_event_types(("poisoning.suspicious_dataset",), owner),
+            "high_risk_training_attempts": _count_event_types(
+                ("poisoning.training_blocked", "poisoning.training_override"),
+                owner,
+            ),
+            "poisoned_sample_count": _sum_poisoned_samples(owner),
+            "poisoning_detector_available": detector_runtime_status().get("available", False),
             "severity_counts": _count_by_severity(owner),
             "total_events": sum(_count_by_severity(owner).values()),
         },

@@ -26,7 +26,7 @@ type SecurityEventCardProps = {
 
 const eventIcon = (eventType: string): LucideIcon => {
   if (eventType.startsWith('inference')) return Zap;
-  if (eventType.startsWith('adversarial') || eventType.startsWith('integrity')) return Shield;
+  if (eventType.startsWith('adversarial') || eventType.startsWith('integrity') || eventType.startsWith('poisoning')) return Shield;
   if (eventType.startsWith('drift')) return AlertTriangle;
   return FileCheck;
 };

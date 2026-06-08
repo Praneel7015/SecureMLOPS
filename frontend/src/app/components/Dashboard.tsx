@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState, useRef } from 'react';
+import { Fragment, useEffect, useMemo, useState, useRef, type RefObject } from 'react';
 import { Upload, Image as ImageIcon, CheckCircle2, XCircle, AlertCircle, ChevronDown, ChevronUp, Shield, Settings as SettingsIcon, LogOut, Menu, X, TrendingUp, FileCheck, Activity, Zap, Database, Lock, BarChart3, PlayCircle, Download, RefreshCw, History, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { Wordmark } from './brand/Wordmark';
@@ -17,11 +17,14 @@ import {
   SampleImage,
   SupportedModel,
   DatasetSummary,
+  DatasetSecurityReport,
   TrainingJob,
   TrainingModel,
 } from '../api';
 import { DashboardOverview } from './DashboardOverview';
 import { SecurityLogsPanel } from './SecurityLogsPanel';
+import { DatasetSecurityReportCard } from './training/DatasetSecurityReport';
+import { FlaggedSamplesGrid } from './training/FlaggedSamplesGrid';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from './ui/chart';
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Scatter, ScatterChart, XAxis, YAxis } from 'recharts';
 
@@ -79,6 +82,23 @@ const toNumber = (value: unknown) => {
   return Number.isFinite(num) ? num : null;
 };
 
+const formatTrainingTimestamp = (value?: string) => {
+  if (!value) return 'N/A';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  const time = date.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+
+  return `${day}-${month}-${year}, ${time}`;
+};
+
 export function Dashboard({
   username,
   sampleImages,
@@ -105,7 +125,11 @@ export function Dashboard({
   const modelInputRef = useRef<HTMLInputElement>(null);
   const datasetInputRef = useRef<HTMLInputElement>(null);
   const trainingLogRef = useRef<HTMLDivElement>(null);
+  const inferenceErrorRef = useRef<HTMLDivElement>(null);
+  const trainingErrorRef = useRef<HTMLDivElement>(null);
+  const driftErrorRef = useRef<HTMLDivElement>(null);
   const [isLogPinned, setIsLogPinned] = useState(true);
+  const [activeError, setActiveError] = useState<string>('');
 
   const [pipelineStages, setPipelineStages] = useState<PipelineStage[]>([
     { id: 1, name: 'Authentication', status: 'pending', progress: 0 },
@@ -180,6 +204,8 @@ export function Dashboard({
     freeze_backbone: false,
   });
   const [selectedDatasetId, setSelectedDatasetId] = useState<string>('');
+  const [securityOverride, setSecurityOverride] = useState(false);
+  const [latestSecurityReport, setLatestSecurityReport] = useState<DatasetSecurityReport | null>(null);
   const [driftEvents, setDriftEvents] = useState<DriftEvent[]>([]);
   const [driftSummary, setDriftSummary] = useState<DriftSummary | null>(null);
   const [driftError, setDriftError] = useState<string>('');
@@ -246,6 +272,25 @@ export function Dashboard({
     }
   }, [activeSection]);
 
+  useEffect(() => {
+    const errorTargets: Partial<Record<typeof activeSection, { message: string; ref: RefObject<HTMLDivElement> }>> = {
+      inference: messageType === 'error' && message ? { message, ref: inferenceErrorRef } : undefined,
+      training: trainingError ? { message: trainingError, ref: trainingErrorRef } : undefined,
+      monitoring: driftError ? { message: driftError, ref: driftErrorRef } : undefined,
+    };
+    const target = errorTargets[activeSection];
+    if (!target?.message) {
+      setActiveError('');
+      return;
+    }
+
+    setActiveError(target.message);
+    window.setTimeout(() => {
+      target.ref.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      target.ref.current?.focus({ preventScroll: true });
+    }, 0);
+  }, [activeSection, driftError, message, messageType, trainingError]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setSelectedFile(e.target.files[0]);
@@ -309,11 +354,12 @@ export function Dashboard({
       return;
     }
 
-    setTrainingMessage('Dataset validated successfully.');
+    setTrainingMessage('Dataset validated and security scanned.');
     setDatasetFile(null);
     if (response.dataset) {
       setDatasets((prev) => [response.dataset!, ...prev.filter((d) => d.dataset_id !== response.dataset?.dataset_id)]);
       setSelectedDatasetId(response.dataset.dataset_id);
+      setLatestSecurityReport(response.security_report || response.dataset.poisoning_scan || null);
     }
     setIsDatasetUploading(false);
   };
@@ -336,15 +382,19 @@ export function Dashboard({
       batch_size: trainingConfig.batch_size,
       learning_rate: trainingConfig.learning_rate,
       freeze_backbone: trainingConfig.freeze_backbone,
+      security_override: securityOverride,
     });
 
     if (!response.ok || !response.job) {
       setTrainingError(response.message || 'Training could not be started.');
+      if (response.security_report) {
+        setLatestSecurityReport(response.security_report);
+      }
       setIsTrainingStarting(false);
       return;
     }
 
-    setTrainingMessage('Training job queued.');
+    setTrainingMessage(response.security_message || 'Training job queued.');
     setActiveJobId(response.job.job_id);
     setActiveJob(response.job);
     setTrainingJobs((prev) => [response.job!, ...prev.filter((job) => job.job_id !== response.job?.job_id)]);
@@ -532,6 +582,16 @@ export function Dashboard({
     return Object.entries(dist).map(([label, count]) => ({ label, count }));
   }, [datasets, selectedDatasetId]);
 
+  const activeSecurityReport = useMemo(() => {
+    if (latestSecurityReport) {
+      return latestSecurityReport;
+    }
+    const dataset = datasets.find((item) => item.dataset_id === selectedDatasetId);
+    return dataset?.poisoning_scan || null;
+  }, [datasets, latestSecurityReport, selectedDatasetId]);
+
+  const requiresSecurityOverride = activeSecurityReport?.training_decision === 'block';
+
   const classLabelSummary = useMemo(() => {
     const labels = backendResult?.class_names;
     if (!labels || !labels.length) {
@@ -668,13 +728,14 @@ export function Dashboard({
     yTickFormatter?: (value: number) => string;
   }) => (
     <ChartContainer config={chartConfig} className="h-56 w-full">
-      <LineChart data={chartData} margin={{ left: 12, right: 12 }}>
+      <LineChart data={chartData} margin={{ top: 8, right: 12, bottom: 24, left: 12 }}>
         <CartesianGrid vertical={false} strokeDasharray="3 3" />
         <XAxis
           dataKey="epoch"
           tickLine={false}
           axisLine={false}
-          label={{ value: 'Epoch', position: 'insideBottomRight', offset: -6 }}
+          dy={6}
+          label={{ value: 'Epoch', position: 'bottom', offset: 6 }}
         />
         <YAxis
           tickLine={false}
@@ -726,6 +787,28 @@ export function Dashboard({
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-background">
+      {activeError && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="fixed right-4 top-4 z-[70] flex max-w-md items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-destructive shadow-lg backdrop-blur"
+        >
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-foreground">Error</p>
+            <p className="mt-1 text-sm">{activeError}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActiveError('')}
+            className="rounded p-1 text-destructive/70 transition-colors hover:bg-destructive/10 hover:text-destructive"
+            aria-label="Dismiss error"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       {/* Mobile Header */}
       <div className="lg:hidden sticky top-0 z-40 flex items-center justify-between border-b border-border bg-card/80 px-5 py-3.5 backdrop-blur-xl">
         <Wordmark size="sm" />
@@ -1030,7 +1113,13 @@ export function Dashboard({
           {activeSection === 'inference' && (
             <>
               {message && (
-                <div className={`rounded-lg border px-4 py-3 ${messageType === 'error' ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-success/30 bg-success/10 text-success'}`}>
+                <div
+                  ref={inferenceErrorRef}
+                  tabIndex={messageType === 'error' ? -1 : undefined}
+                  role={messageType === 'error' ? 'alert' : 'status'}
+                  aria-live={messageType === 'error' ? 'assertive' : 'polite'}
+                  className={`rounded-lg border px-4 py-3 outline-none focus:ring-2 focus:ring-ring ${messageType === 'error' ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-success/30 bg-success/10 text-success'}`}
+                >
                   {message}
                 </div>
               )}
@@ -1190,6 +1279,18 @@ export function Dashboard({
                         <div>Status: {backendResult.status.replaceAll('_', ' ')}</div>
                         <div>Anomaly: {backendResult.anomaly ? 'Detected' : 'Normal'}</div>
                         <div>Adversarial: {backendResult.adversarial ? 'Detected' : 'Normal'}</div>
+                        <div className="rounded-md border border-border/60 bg-background/30 p-2 text-xs">
+                          Runtime Poison Suspicion:{' '}
+                          {backendResult.runtime_poison_suspicion
+                            ? 'Elevated'
+                            : backendResult.runtime_poison_available === false
+                              ? 'Unavailable'
+                              : 'Normal'}
+                          {backendResult.runtime_poison_probability !== null &&
+                            backendResult.runtime_poison_probability !== undefined && (
+                              <span> · {Math.round(backendResult.runtime_poison_probability * 100)}%</span>
+                            )}
+                        </div>
                       </div>
                     ) : (
                       <p className="font-mono text-muted-foreground">Signals will appear after an inference run.</p>
@@ -1231,7 +1332,13 @@ export function Dashboard({
           {activeSection === 'training' && (
             <>
               {(trainingError || trainingMessage) && (
-                <div className={`rounded-lg border px-4 py-3 ${trainingError ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-success/30 bg-success/10 text-success'}`}>
+                <div
+                  ref={trainingErrorRef}
+                  tabIndex={trainingError ? -1 : undefined}
+                  role={trainingError ? 'alert' : 'status'}
+                  aria-live={trainingError ? 'assertive' : 'polite'}
+                  className={`rounded-lg border px-4 py-3 outline-none focus:ring-2 focus:ring-ring ${trainingError ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-success/30 bg-success/10 text-success'}`}
+                >
                   {trainingError || trainingMessage}
                 </div>
               )}
@@ -1247,13 +1354,12 @@ export function Dashboard({
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                <div className="bg-card rounded-lg border border-border p-6 space-y-4">
-                  <div className="flex items-center gap-3">
-                    <Upload className="w-5 h-5 text-accent" />
-                    <h3 className="text-foreground">Dataset Upload</h3>
-                  </div>
-                  <form onSubmit={handleDatasetUpload} className="space-y-4">
+              <div className="bg-card rounded-lg border border-border p-6 space-y-4">
+                <div className="flex items-center gap-3">
+                  <Upload className="w-5 h-5 text-accent" />
+                  <h3 className="text-foreground">Dataset Upload</h3>
+                </div>
+                <form onSubmit={handleDatasetUpload} className="space-y-4">
                     <div
                       onClick={() => datasetInputRef.current?.click()}
                       className="border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer hover:border-accent transition-colors bg-input-background"
@@ -1277,10 +1383,10 @@ export function Dashboard({
                       disabled={isDatasetUploading}
                       className="w-full bg-accent hover:bg-accent-600 disabled:bg-muted disabled:text-muted-foreground text-accent-foreground py-2.5 rounded-lg transition-colors"
                     >
-                      {isDatasetUploading ? 'Uploading...' : 'Upload & Validate'}
+                      {isDatasetUploading ? 'Uploading & Scanning...' : 'Upload, Validate & Scan'}
                     </button>
-                  </form>
-                  <div className="pt-2">
+                </form>
+                <div className="pt-2">
                     <h4 className="font-mono text-sm text-muted-foreground mb-2">Validated Datasets</h4>
                     {datasets.length ? (
                       <div className="space-y-2">
@@ -1288,6 +1394,11 @@ export function Dashboard({
                           <div key={dataset.dataset_id} className="border border-border rounded-lg p-3">
                             <div className="text-foreground font-mono text-sm">{dataset.source_name || dataset.dataset_id}</div>
                             <div className="text-muted-foreground font-mono text-xs">{dataset.image_count} images · {dataset.class_names.join(', ')}</div>
+                            {dataset.poisoning_scan && (
+                              <div className="mt-1 font-mono text-xs text-accent">
+                                Risk: {dataset.poisoning_scan.dataset_risk_level || 'N/A'} · Flagged: {dataset.poisoning_scan.suspicious_count ?? 0}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -1297,12 +1408,23 @@ export function Dashboard({
                   </div>
                 </div>
 
-                <div className="bg-card rounded-lg border border-border p-6 space-y-4">
-                  <div className="flex items-center gap-3">
-                    <PlayCircle className="w-5 h-5 text-accent" />
-                    <h3 className="text-foreground">Training Configuration</h3>
-                  </div>
-                  <form onSubmit={handleTrainingStart} className="space-y-4">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <DatasetSecurityReportCard
+                  report={activeSecurityReport}
+                  isLoading={isDatasetUploading}
+                />
+                <FlaggedSamplesGrid
+                  samples={activeSecurityReport?.flagged_samples || []}
+                  isLoading={isDatasetUploading}
+                />
+              </div>
+
+              <div className="bg-card rounded-lg border border-border p-6 space-y-4">
+                <div className="flex items-center gap-3">
+                  <PlayCircle className="w-5 h-5 text-accent" />
+                  <h3 className="text-foreground">Training Configuration</h3>
+                </div>
+                <form onSubmit={handleTrainingStart} className="space-y-4">
                     <div>
                       <label className="block mb-2 text-foreground">Dataset</label>
                       <select
@@ -1377,6 +1499,19 @@ export function Dashboard({
                         className="w-5 h-5 rounded border-border text-accent focus:ring-accent"
                       />
                     </label>
+                    {requiresSecurityOverride && (
+                      <label className="flex items-start gap-3 p-3 border border-warning/30 rounded-lg bg-warning/10 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={securityOverride}
+                          onChange={(event) => setSecurityOverride(event.target.checked)}
+                          className="mt-1 w-5 h-5 rounded border-border text-accent focus:ring-accent"
+                        />
+                        <span className="font-mono text-sm text-foreground">
+                          Manual security override required. Dataset poisoning risk is HIGH.
+                        </span>
+                      </label>
+                    )}
                     <button
                       type="submit"
                       disabled={isTrainingStarting}
@@ -1385,7 +1520,6 @@ export function Dashboard({
                       {isTrainingStarting ? 'Starting...' : 'Start Training'}
                     </button>
                   </form>
-                </div>
               </div>
 
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -1609,8 +1743,8 @@ export function Dashboard({
                               })}
                             </Fragment>
                           ))}
-                        </div>
                       </div>
+                    </div>
                     </div>
                   ) : (
                     <p className="font-mono text-muted-foreground">Confusion matrix will appear after validation epochs.</p>
@@ -1648,7 +1782,7 @@ export function Dashboard({
                       {trainingJobs.slice(0, 5).map((job) => (
                         <div key={job.job_id} className="border border-border rounded-lg p-3">
                           <div className="flex items-center justify-between gap-3 font-mono text-foreground min-w-0">
-                            <span className="truncate" title={job.job_id}>{job.job_id}</span>
+                            <span className="truncate" title={`Job ID: ${job.job_id}`}>Job ID: {job.job_id}</span>
                             <span className="text-muted-foreground capitalize">{job.status}</span>
                           </div>
                           <div className="font-mono text-xs text-muted-foreground truncate" title={`Dataset: ${job.dataset_id}`}>
@@ -1680,6 +1814,9 @@ export function Dashboard({
                             </div>
                             <div className="font-mono text-xs text-muted-foreground truncate" title={model.model_id}>
                               ID: {model.model_id}
+                            </div>
+                            <div className="font-mono text-xs text-muted-foreground">
+                              Trained: {formatTrainingTimestamp(model.created_at)}
                             </div>
                           </div>
                           <a
@@ -1734,7 +1871,13 @@ export function Dashboard({
               </div>
 
               {(driftError || isDriftLoading) && (
-                <div className={`rounded-lg border px-4 py-3 ${driftError ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-border/30 bg-muted/40 text-muted-foreground'}`}>
+                <div
+                  ref={driftErrorRef}
+                  tabIndex={driftError ? -1 : undefined}
+                  role={driftError ? 'alert' : 'status'}
+                  aria-live={driftError ? 'assertive' : 'polite'}
+                  className={`rounded-lg border px-4 py-3 outline-none focus:ring-2 focus:ring-ring ${driftError ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-border/30 bg-muted/40 text-muted-foreground'}`}
+                >
                   {driftError || 'Loading drift telemetry...'}
                 </div>
               )}

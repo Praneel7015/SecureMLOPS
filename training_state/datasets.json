@@ -26,6 +26,216 @@
       "image_count": 60,
       "source_name": "dataset.zip"
     },
+    "466a8ea32f45430bb3fc491404c47b08": {
+      "class_distribution": {
+        "airplane": 50,
+        "automobile": 50,
+        "bird": 50,
+        "cat": 50,
+        "dog": 50
+      },
+      "class_names": [
+        "airplane",
+        "automobile",
+        "bird",
+        "cat",
+        "dog"
+      ],
+      "created_at": "2026-05-23T06:35:02.042910+00:00",
+      "dataset_dir": "E:\\MSRIT\\SEM-6\\project\\uploads\\datasets\\466a8ea32f45430bb3fc491404c47b08\\dataset",
+      "dataset_id": "466a8ea32f45430bb3fc491404c47b08",
+      "image_count": 250,
+      "owner": "person1",
+      "poisoning_scan": {
+        "allow_override": true,
+        "average_poison_probability": 0.0948,
+        "dataset_risk_level": "HIGH",
+        "detector_type": "MLP",
+        "flagged_ratio": 0.06,
+        "flagged_samples": [
+          {
+            "class_name": "airplane",
+            "filename": "airplane_042.png",
+            "poison_probability": 0.9973,
+            "preview_url": "/api/training/datasets/466a8ea32f45430bb3fc491404c47b08/images/airplane/airplane_042.png",
+            "relative_path": "airplane/airplane_042.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "airplane",
+            "filename": "airplane_045.png",
+            "poison_probability": 0.97,
+            "preview_url": "/api/training/datasets/466a8ea32f45430bb3fc491404c47b08/images/airplane/airplane_045.png",
+            "relative_path": "airplane/airplane_045.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "airplane",
+            "filename": "airplane_033.png",
+            "poison_probability": 0.9659,
+            "preview_url": "/api/training/datasets/466a8ea32f45430bb3fc491404c47b08/images/airplane/airplane_033.png",
+            "relative_path": "airplane/airplane_033.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "automobile",
+            "filename": "automobile_034.png",
+            "poison_probability": 0.9503,
+            "preview_url": "/api/training/datasets/466a8ea32f45430bb3fc491404c47b08/images/automobile/automobile_034.png",
+            "relative_path": "automobile/automobile_034.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "cat",
+            "filename": "cat_007.png",
+            "poison_probability": 0.9491,
+            "preview_url": "/api/training/datasets/466a8ea32f45430bb3fc491404c47b08/images/cat/cat_007.png",
+            "relative_path": "cat/cat_007.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "airplane",
+            "filename": "airplane_021.png",
+            "poison_probability": 0.9328,
+            "preview_url": "/api/training/datasets/466a8ea32f45430bb3fc491404c47b08/images/airplane/airplane_021.png",
+            "relative_path": "airplane/airplane_021.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "cat",
+            "filename": "cat_032.png",
+            "poison_probability": 0.8995,
+            "preview_url": "/api/training/datasets/466a8ea32f45430bb3fc491404c47b08/images/cat/cat_032.png",
+            "relative_path": "cat/cat_032.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "airplane",
+            "filename": "airplane_003.png",
+            "poison_probability": 0.8545,
+            "preview_url": "/api/training/datasets/466a8ea32f45430bb3fc491404c47b08/images/airplane/airplane_003.png",
+            "relative_path": "airplane/airplane_003.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "automobile",
+            "filename": "automobile_018.png",
+            "poison_probability": 0.8506,
+            "preview_url": "/api/training/datasets/466a8ea32f45430bb3fc491404c47b08/images/automobile/automobile_018.png",
+            "relative_path": "automobile/automobile_018.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "bird",
+            "filename": "bird_023.png",
+            "poison_probability": 0.8292,
+            "preview_url": "/api/training/datasets/466a8ea32f45430bb3fc491404c47b08/images/bird/bird_023.png",
+            "relative_path": "bird/bird_023.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "automobile",
+            "filename": "automobile_031.png",
+            "poison_probability": 0.8244,
+            "preview_url": "/api/training/datasets/466a8ea32f45430bb3fc491404c47b08/images/automobile/automobile_031.png",
+            "relative_path": "automobile/automobile_031.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "cat",
+            "filename": "cat_033.png",
+            "poison_probability": 0.7639,
+            "preview_url": "/api/training/datasets/466a8ea32f45430bb3fc491404c47b08/images/cat/cat_033.png",
+            "relative_path": "cat/cat_033.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "cat",
+            "filename": "cat_010.png",
+            "poison_probability": 0.7573,
+            "preview_url": "/api/training/datasets/466a8ea32f45430bb3fc491404c47b08/images/cat/cat_010.png",
+            "relative_path": "cat/cat_010.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "bird",
+            "filename": "bird_016.png",
+            "poison_probability": 0.7111,
+            "preview_url": "/api/training/datasets/466a8ea32f45430bb3fc491404c47b08/images/bird/bird_016.png",
+            "relative_path": "bird/bird_016.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "airplane",
+            "filename": "airplane_031.png",
+            "poison_probability": 0.7002,
+            "preview_url": "/api/training/datasets/466a8ea32f45430bb3fc491404c47b08/images/airplane/airplane_031.png",
+            "relative_path": "airplane/airplane_031.png",
+            "severity": "HIGH"
+          }
+        ],
+        "highest_poison_probability": 0.9973,
+        "images_scanned": 250,
+        "recommendation": "Review 15 flagged sample(s) before training. Dataset risk is HIGH \u2014 training is blocked until manual override.",
+        "sample_threshold": 0.67,
+        "scan_available": true,
+        "scan_status": "completed",
+        "scanned_at": null,
+        "suspicious_count": 15,
+        "training_decision": "block"
+      },
+      "source_name": "dataset_multi1.zip"
+    },
+    "4edaefc45d124ea792cb312b03c8910c": {
+      "class_distribution": {
+        "cat": 30,
+        "dog": 30
+      },
+      "class_names": [
+        "cat",
+        "dog"
+      ],
+      "created_at": "2026-05-21T19:30:49.323816+00:00",
+      "dataset_dir": "E:\\MSRIT\\SEM-6\\mini_project\\SecureMLOPS\\uploads\\datasets\\4edaefc45d124ea792cb312b03c8910c\\dataset",
+      "dataset_id": "4edaefc45d124ea792cb312b03c8910c",
+      "image_count": 60,
+      "owner": "person1",
+      "poisoning_scan": {
+        "allow_override": true,
+        "average_poison_probability": 0.0422,
+        "dataset_risk_level": "HIGH",
+        "detector_type": "MLP",
+        "flagged_ratio": 0.0333,
+        "flagged_samples": [
+          {
+            "class_name": "cat",
+            "filename": "cat_013.jpg",
+            "poison_probability": 0.9654,
+            "preview_url": "/api/training/datasets/4edaefc45d124ea792cb312b03c8910c/images/cat/cat_013.jpg",
+            "relative_path": "cat/cat_013.jpg",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "dog",
+            "filename": "dog_002.jpg",
+            "poison_probability": 0.963,
+            "preview_url": "/api/training/datasets/4edaefc45d124ea792cb312b03c8910c/images/dog/dog_002.jpg",
+            "relative_path": "dog/dog_002.jpg",
+            "severity": "HIGH"
+          }
+        ],
+        "highest_poison_probability": 0.9654,
+        "images_scanned": 60,
+        "recommendation": "Review 2 flagged sample(s) before training. Dataset risk is HIGH \u2014 training is blocked until manual override.",
+        "sample_threshold": 0.67,
+        "scan_available": true,
+        "scan_status": "completed",
+        "scanned_at": null,
+        "suspicious_count": 2,
+        "training_decision": "block"
+      },
+      "source_name": "dataset.zip"
+    },
     "534e9537092b4999ac0573b315e24967": {
       "class_distribution": {
         "cat": 30,
@@ -58,6 +268,182 @@
       "owner": "person2",
       "source_name": "dataset.zip"
     },
+    "92a3eeab7b1948f99753b0f9a6373ead": {
+      "class_distribution": {
+        "airplane": 50,
+        "automobile": 50,
+        "bird": 50,
+        "cat": 50,
+        "dog": 50
+      },
+      "class_names": [
+        "airplane",
+        "automobile",
+        "bird",
+        "cat",
+        "dog"
+      ],
+      "created_at": "2026-05-23T06:05:11.134502+00:00",
+      "dataset_dir": "E:\\MSRIT\\SEM-6\\project\\uploads\\datasets\\92a3eeab7b1948f99753b0f9a6373ead\\dataset",
+      "dataset_id": "92a3eeab7b1948f99753b0f9a6373ead",
+      "image_count": 250,
+      "owner": "person1",
+      "poisoning_scan": {
+        "allow_override": true,
+        "average_poison_probability": 0.0948,
+        "dataset_risk_level": "HIGH",
+        "detector_type": "MLP",
+        "flagged_ratio": 0.06,
+        "flagged_samples": [
+          {
+            "class_name": "airplane",
+            "filename": "airplane_042.png",
+            "poison_probability": 0.9973,
+            "preview_url": "/api/training/datasets/92a3eeab7b1948f99753b0f9a6373ead/images/airplane/airplane_042.png",
+            "relative_path": "airplane/airplane_042.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "airplane",
+            "filename": "airplane_045.png",
+            "poison_probability": 0.97,
+            "preview_url": "/api/training/datasets/92a3eeab7b1948f99753b0f9a6373ead/images/airplane/airplane_045.png",
+            "relative_path": "airplane/airplane_045.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "airplane",
+            "filename": "airplane_033.png",
+            "poison_probability": 0.9659,
+            "preview_url": "/api/training/datasets/92a3eeab7b1948f99753b0f9a6373ead/images/airplane/airplane_033.png",
+            "relative_path": "airplane/airplane_033.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "automobile",
+            "filename": "automobile_034.png",
+            "poison_probability": 0.9503,
+            "preview_url": "/api/training/datasets/92a3eeab7b1948f99753b0f9a6373ead/images/automobile/automobile_034.png",
+            "relative_path": "automobile/automobile_034.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "cat",
+            "filename": "cat_007.png",
+            "poison_probability": 0.9491,
+            "preview_url": "/api/training/datasets/92a3eeab7b1948f99753b0f9a6373ead/images/cat/cat_007.png",
+            "relative_path": "cat/cat_007.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "airplane",
+            "filename": "airplane_021.png",
+            "poison_probability": 0.9328,
+            "preview_url": "/api/training/datasets/92a3eeab7b1948f99753b0f9a6373ead/images/airplane/airplane_021.png",
+            "relative_path": "airplane/airplane_021.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "cat",
+            "filename": "cat_032.png",
+            "poison_probability": 0.8995,
+            "preview_url": "/api/training/datasets/92a3eeab7b1948f99753b0f9a6373ead/images/cat/cat_032.png",
+            "relative_path": "cat/cat_032.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "airplane",
+            "filename": "airplane_003.png",
+            "poison_probability": 0.8545,
+            "preview_url": "/api/training/datasets/92a3eeab7b1948f99753b0f9a6373ead/images/airplane/airplane_003.png",
+            "relative_path": "airplane/airplane_003.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "automobile",
+            "filename": "automobile_018.png",
+            "poison_probability": 0.8506,
+            "preview_url": "/api/training/datasets/92a3eeab7b1948f99753b0f9a6373ead/images/automobile/automobile_018.png",
+            "relative_path": "automobile/automobile_018.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "bird",
+            "filename": "bird_023.png",
+            "poison_probability": 0.8292,
+            "preview_url": "/api/training/datasets/92a3eeab7b1948f99753b0f9a6373ead/images/bird/bird_023.png",
+            "relative_path": "bird/bird_023.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "automobile",
+            "filename": "automobile_031.png",
+            "poison_probability": 0.8244,
+            "preview_url": "/api/training/datasets/92a3eeab7b1948f99753b0f9a6373ead/images/automobile/automobile_031.png",
+            "relative_path": "automobile/automobile_031.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "cat",
+            "filename": "cat_033.png",
+            "poison_probability": 0.7639,
+            "preview_url": "/api/training/datasets/92a3eeab7b1948f99753b0f9a6373ead/images/cat/cat_033.png",
+            "relative_path": "cat/cat_033.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "cat",
+            "filename": "cat_010.png",
+            "poison_probability": 0.7573,
+            "preview_url": "/api/training/datasets/92a3eeab7b1948f99753b0f9a6373ead/images/cat/cat_010.png",
+            "relative_path": "cat/cat_010.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "bird",
+            "filename": "bird_016.png",
+            "poison_probability": 0.7111,
+            "preview_url": "/api/training/datasets/92a3eeab7b1948f99753b0f9a6373ead/images/bird/bird_016.png",
+            "relative_path": "bird/bird_016.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "airplane",
+            "filename": "airplane_031.png",
+            "poison_probability": 0.7002,
+            "preview_url": "/api/training/datasets/92a3eeab7b1948f99753b0f9a6373ead/images/airplane/airplane_031.png",
+            "relative_path": "airplane/airplane_031.png",
+            "severity": "HIGH"
+          }
+        ],
+        "highest_poison_probability": 0.9973,
+        "images_scanned": 250,
+        "recommendation": "Review 15 flagged sample(s) before training. Dataset risk is HIGH \u2014 training is blocked until manual override.",
+        "sample_threshold": 0.67,
+        "scan_available": true,
+        "scan_status": "completed",
+        "scanned_at": null,
+        "suspicious_count": 15,
+        "training_decision": "block"
+      },
+      "source_name": "dataset_multi1.zip"
+    },
+    "9e0f13d62d4c4c338f226f6e034dd65a": {
+      "class_distribution": {
+        "cat": 30,
+        "dog": 30
+      },
+      "class_names": [
+        "cat",
+        "dog"
+      ],
+      "created_at": "2026-05-21T18:38:25.620692+00:00",
+      "dataset_dir": "E:\\MSRIT\\SEM-6\\mini_project\\SecureMLOPS\\uploads\\datasets\\9e0f13d62d4c4c338f226f6e034dd65a\\dataset",
+      "dataset_id": "9e0f13d62d4c4c338f226f6e034dd65a",
+      "image_count": 60,
+      "owner": "person1",
+      "source_name": "dataset.zip"
+    },
     "b197c9f6beb641209bd706fb65eb962a": {
       "class_distribution": {
         "cat": 30,
@@ -74,6 +460,106 @@
       "owner": "person1",
       "source_name": "dataset.zip"
     },
+    "b2420c3ba195454ba0bf12b9fc450d8f": {
+      "class_distribution": {
+        "cat": 30,
+        "dog": 30
+      },
+      "class_names": [
+        "cat",
+        "dog"
+      ],
+      "created_at": "2026-05-22T05:46:55.985751+00:00",
+      "dataset_dir": "E:\\MSRIT\\SEM-6\\project\\uploads\\datasets\\b2420c3ba195454ba0bf12b9fc450d8f\\dataset",
+      "dataset_id": "b2420c3ba195454ba0bf12b9fc450d8f",
+      "image_count": 60,
+      "owner": "person1",
+      "poisoning_scan": {
+        "allow_override": true,
+        "average_poison_probability": 0.0422,
+        "dataset_risk_level": "HIGH",
+        "detector_type": "MLP",
+        "flagged_ratio": 0.0333,
+        "flagged_samples": [
+          {
+            "class_name": "cat",
+            "filename": "cat_013.jpg",
+            "poison_probability": 0.9654,
+            "preview_url": "/api/training/datasets/b2420c3ba195454ba0bf12b9fc450d8f/images/cat/cat_013.jpg",
+            "relative_path": "cat/cat_013.jpg",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "dog",
+            "filename": "dog_002.jpg",
+            "poison_probability": 0.963,
+            "preview_url": "/api/training/datasets/b2420c3ba195454ba0bf12b9fc450d8f/images/dog/dog_002.jpg",
+            "relative_path": "dog/dog_002.jpg",
+            "severity": "HIGH"
+          }
+        ],
+        "highest_poison_probability": 0.9654,
+        "images_scanned": 60,
+        "recommendation": "Review 2 flagged sample(s) before training. Dataset risk is HIGH \u2014 training is blocked until manual override.",
+        "sample_threshold": 0.67,
+        "scan_available": true,
+        "scan_status": "completed",
+        "scanned_at": null,
+        "suspicious_count": 2,
+        "training_decision": "block"
+      },
+      "source_name": "dataset.zip"
+    },
+    "e6ca679504644cc68e880cbf49488b74": {
+      "class_distribution": {
+        "cat": 30,
+        "dog": 30
+      },
+      "class_names": [
+        "cat",
+        "dog"
+      ],
+      "created_at": "2026-05-22T13:01:36.876600+00:00",
+      "dataset_dir": "E:\\MSRIT\\SEM-6\\project\\uploads\\datasets\\e6ca679504644cc68e880cbf49488b74\\dataset",
+      "dataset_id": "e6ca679504644cc68e880cbf49488b74",
+      "image_count": 60,
+      "owner": "person1",
+      "poisoning_scan": {
+        "allow_override": true,
+        "average_poison_probability": 0.0422,
+        "dataset_risk_level": "HIGH",
+        "detector_type": "MLP",
+        "flagged_ratio": 0.0333,
+        "flagged_samples": [
+          {
+            "class_name": "cat",
+            "filename": "cat_013.jpg",
+            "poison_probability": 0.9654,
+            "preview_url": "/api/training/datasets/e6ca679504644cc68e880cbf49488b74/images/cat/cat_013.jpg",
+            "relative_path": "cat/cat_013.jpg",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "dog",
+            "filename": "dog_002.jpg",
+            "poison_probability": 0.963,
+            "preview_url": "/api/training/datasets/e6ca679504644cc68e880cbf49488b74/images/dog/dog_002.jpg",
+            "relative_path": "dog/dog_002.jpg",
+            "severity": "HIGH"
+          }
+        ],
+        "highest_poison_probability": 0.9654,
+        "images_scanned": 60,
+        "recommendation": "Review 2 flagged sample(s) before training. Dataset risk is HIGH \u2014 training is blocked until manual override.",
+        "sample_threshold": 0.67,
+        "scan_available": true,
+        "scan_status": "completed",
+        "scanned_at": null,
+        "suspicious_count": 2,
+        "training_decision": "block"
+      },
+      "source_name": "dataset.zip"
+    },
     "f8c1a41171ad4dfbb1d70b1a88462eaf": {
       "class_distribution": {
         "cat": 30,
@@ -88,6 +574,262 @@
       "dataset_id": "f8c1a41171ad4dfbb1d70b1a88462eaf",
       "image_count": 60,
       "source_name": "dataset.zip"
+    },
+    "fa76b5876cde4082a0c98cc4d9c5c764": {
+      "class_distribution": {
+        "airplane": 50,
+        "automobile": 50,
+        "bird": 50,
+        "cat": 50,
+        "dog": 50
+      },
+      "class_names": [
+        "airplane",
+        "automobile",
+        "bird",
+        "cat",
+        "dog"
+      ],
+      "created_at": "2026-05-23T06:05:33.731919+00:00",
+      "dataset_dir": "E:\\MSRIT\\SEM-6\\project\\uploads\\datasets\\fa76b5876cde4082a0c98cc4d9c5c764\\dataset",
+      "dataset_id": "fa76b5876cde4082a0c98cc4d9c5c764",
+      "image_count": 250,
+      "owner": "person1",
+      "poisoning_scan": {
+        "allow_override": true,
+        "average_poison_probability": 0.128,
+        "dataset_risk_level": "HIGH",
+        "detector_type": "MLP",
+        "flagged_ratio": 0.108,
+        "flagged_samples": [
+          {
+            "class_name": "automobile",
+            "filename": "automobile_001.png",
+            "poison_probability": 0.999,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/automobile/automobile_001.png",
+            "relative_path": "automobile/automobile_001.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "cat",
+            "filename": "cat_020.png",
+            "poison_probability": 0.9987,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/cat/cat_020.png",
+            "relative_path": "cat/cat_020.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "airplane",
+            "filename": "airplane_042.png",
+            "poison_probability": 0.9973,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/airplane/airplane_042.png",
+            "relative_path": "airplane/airplane_042.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "automobile",
+            "filename": "automobile_011.png",
+            "poison_probability": 0.9952,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/automobile/automobile_011.png",
+            "relative_path": "automobile/automobile_011.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "dog",
+            "filename": "dog_035.png",
+            "poison_probability": 0.9924,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/dog/dog_035.png",
+            "relative_path": "dog/dog_035.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "dog",
+            "filename": "dog_020.png",
+            "poison_probability": 0.9906,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/dog/dog_020.png",
+            "relative_path": "dog/dog_020.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "cat",
+            "filename": "cat_001.png",
+            "poison_probability": 0.9881,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/cat/cat_001.png",
+            "relative_path": "cat/cat_001.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "cat",
+            "filename": "cat_040.png",
+            "poison_probability": 0.9872,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/cat/cat_040.png",
+            "relative_path": "cat/cat_040.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "airplane",
+            "filename": "airplane_033.png",
+            "poison_probability": 0.9824,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/airplane/airplane_033.png",
+            "relative_path": "airplane/airplane_033.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "cat",
+            "filename": "cat_014.png",
+            "poison_probability": 0.9734,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/cat/cat_014.png",
+            "relative_path": "cat/cat_014.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "airplane",
+            "filename": "airplane_045.png",
+            "poison_probability": 0.97,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/airplane/airplane_045.png",
+            "relative_path": "airplane/airplane_045.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "cat",
+            "filename": "cat_031.png",
+            "poison_probability": 0.9544,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/cat/cat_031.png",
+            "relative_path": "cat/cat_031.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "bird",
+            "filename": "bird_017.png",
+            "poison_probability": 0.9502,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/bird/bird_017.png",
+            "relative_path": "bird/bird_017.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "airplane",
+            "filename": "airplane_021.png",
+            "poison_probability": 0.9328,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/airplane/airplane_021.png",
+            "relative_path": "airplane/airplane_021.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "cat",
+            "filename": "cat_003.png",
+            "poison_probability": 0.8977,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/cat/cat_003.png",
+            "relative_path": "cat/cat_003.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "automobile",
+            "filename": "automobile_010.png",
+            "poison_probability": 0.8758,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/automobile/automobile_010.png",
+            "relative_path": "automobile/automobile_010.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "dog",
+            "filename": "dog_044.png",
+            "poison_probability": 0.859,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/dog/dog_044.png",
+            "relative_path": "dog/dog_044.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "cat",
+            "filename": "cat_008.png",
+            "poison_probability": 0.8081,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/cat/cat_008.png",
+            "relative_path": "cat/cat_008.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "bird",
+            "filename": "bird_039.png",
+            "poison_probability": 0.768,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/bird/bird_039.png",
+            "relative_path": "bird/bird_039.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "bird",
+            "filename": "bird_006.png",
+            "poison_probability": 0.7655,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/bird/bird_006.png",
+            "relative_path": "bird/bird_006.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "airplane",
+            "filename": "airplane_016.png",
+            "poison_probability": 0.7338,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/airplane/airplane_016.png",
+            "relative_path": "airplane/airplane_016.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "airplane",
+            "filename": "airplane_003.png",
+            "poison_probability": 0.7125,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/airplane/airplane_003.png",
+            "relative_path": "airplane/airplane_003.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "airplane",
+            "filename": "airplane_031.png",
+            "poison_probability": 0.7002,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/airplane/airplane_031.png",
+            "relative_path": "airplane/airplane_031.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "bird",
+            "filename": "bird_012.png",
+            "poison_probability": 0.6949,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/bird/bird_012.png",
+            "relative_path": "bird/bird_012.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "bird",
+            "filename": "bird_010.png",
+            "poison_probability": 0.6928,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/bird/bird_010.png",
+            "relative_path": "bird/bird_010.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "dog",
+            "filename": "dog_016.png",
+            "poison_probability": 0.6899,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/dog/dog_016.png",
+            "relative_path": "dog/dog_016.png",
+            "severity": "HIGH"
+          },
+          {
+            "class_name": "dog",
+            "filename": "dog_040.png",
+            "poison_probability": 0.6831,
+            "preview_url": "/api/training/datasets/fa76b5876cde4082a0c98cc4d9c5c764/images/dog/dog_040.png",
+            "relative_path": "dog/dog_040.png",
+            "severity": "HIGH"
+          }
+        ],
+        "highest_poison_probability": 0.999,
+        "images_scanned": 250,
+        "recommendation": "Review 27 flagged sample(s) before training. Dataset risk is HIGH \u2014 training is blocked until manual override.",
+        "sample_threshold": 0.67,
+        "scan_available": true,
+        "scan_status": "completed",
+        "scanned_at": null,
+        "suspicious_count": 27,
+        "training_decision": "block"
+      },
+      "source_name": "dataset_multi2.zip"
     },
     "fcb57cc8afc24f0d8bafdbc2c6a0b96c": {
       "class_distribution": {

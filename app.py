@@ -38,6 +38,8 @@ from drift.detector import analyze_drift
 from drift.telemetry import list_events as list_drift_events
 from drift.telemetry import record_event as record_drift_event
 from drift.telemetry import summarize_events
+from Detection.poisoning import evaluate_runtime_poison_suspicion, merge_runtime_poison_suspicion
+from training.dataset_scanner import evaluate_training_start, scan_dataset_for_poisoning
 from telemetry import init_event_store
 from telemetry.events import EventSeverity, EventSource, EventType, emit_event
 from telemetry.aggregator import get_dashboard_summary, get_recent_activity, get_security_event_summary, get_system_status
@@ -387,6 +389,13 @@ def api_training_dataset_upload():
             owner=username,
         )
 
+    poisoning_scan = scan_dataset_for_poisoning(
+        validation.dataset_dir,
+        dataset_id=dataset_id,
+        owner=username,
+        source_name=dataset_file.filename,
+    )
+
     metadata = {
         "dataset_dir": str(validation.dataset_dir),
         "class_names": validation.class_names,
@@ -394,6 +403,7 @@ def api_training_dataset_upload():
         "class_distribution": validation.class_distribution,
         "source_name": dataset_file.filename,
         "owner": username,
+        "poisoning_scan": poisoning_scan,
     }
     record = save_dataset_metadata(dataset_id, metadata)
     zip_path.unlink(missing_ok=True)
@@ -408,6 +418,10 @@ def api_training_dataset_upload():
             "image_count": validation.image_count,
             "class_names": validation.class_names,
             "source_name": dataset_file.filename,
+            "poisoning_scan_status": poisoning_scan.get("scan_status"),
+            "dataset_risk_level": poisoning_scan.get("dataset_risk_level"),
+            "suspicious_count": poisoning_scan.get("suspicious_count"),
+            "training_decision": poisoning_scan.get("training_decision"),
         },
         owner=username,
     )
@@ -415,10 +429,32 @@ def api_training_dataset_upload():
     return jsonify(
         {
             "success": True,
-            "message": "Dataset uploaded and validated.",
+            "message": "Dataset uploaded, validated, and security scanned.",
             "dataset": record,
+            "security_report": poisoning_scan,
         }
     )
+
+
+@app.route("/api/training/datasets/<dataset_id>/images/<path:relative_path>")
+def api_training_dataset_image(dataset_id: str, relative_path: str):
+    username = session.get("user")
+    if not username:
+        return jsonify({"success": False, "message": "Please log in to view dataset images."}), 401
+
+    dataset = get_dataset(dataset_id)
+    if not dataset:
+        return jsonify({"success": False, "message": "Dataset not found."}), 404
+    owner = dataset.get("owner")
+    if owner and owner != username:
+        return jsonify({"success": False, "message": "Dataset access denied."}), 403
+
+    dataset_dir = Path(str(dataset.get("dataset_dir", "")))
+    image_path = (dataset_dir / relative_path).resolve()
+    if dataset_dir.resolve() not in image_path.parents or not image_path.is_file():
+        return jsonify({"success": False, "message": "Image not found."}), 404
+
+    return send_from_directory(image_path.parent, image_path.name)
 
 
 @app.route("/api/training/datasets", methods=["GET"])
@@ -468,12 +504,35 @@ def api_training_start():
     if not dataset_dir or not Path(dataset_dir).exists():
         return jsonify({"success": False, "message": "Dataset directory missing."}), 400
 
+    security_override = bool(payload.get("security_override", False))
+    allowed, security_message, _scan = evaluate_training_start(
+        dataset,
+        security_override=security_override,
+        owner=username,
+    )
+    if not allowed:
+        return jsonify(
+            {
+                "success": False,
+                "message": security_message,
+                "security_report": dataset.get("poisoning_scan"),
+                "requires_override": bool((dataset.get("poisoning_scan") or {}).get("allow_override")),
+            }
+        ), 403
+
     try:
         job = submit_training_job(dataset_id, dataset_dir, cleaned, owner=username)
     except RuntimeError as exc:
         return jsonify({"success": False, "message": str(exc)}), 429
 
-    return jsonify({"success": True, "job": job})
+    return jsonify(
+        {
+            "success": True,
+            "job": job,
+            "security_message": security_message,
+            "security_report": dataset.get("poisoning_scan"),
+        }
+    )
 
 
 @app.route("/api/training/jobs", methods=["GET"])
@@ -1078,6 +1137,22 @@ def analyze():
         drift_projection=drift_info.get("projection"),
     )
 
+    try:
+        runtime_suspicion = evaluate_runtime_poison_suspicion(str(file_path))
+        merge_runtime_poison_suspicion(detection, runtime_suspicion)
+    except Exception as exc:
+        _terminal_logger.exception("RUNTIME_POISON_SUSPICION_FAILURE error=%s", exc)
+        merge_runtime_poison_suspicion(
+            detection,
+            {
+                "runtime_poison_suspicion": False,
+                "runtime_poison_probability": None,
+                "runtime_poison_severity": "UNAVAILABLE",
+                "runtime_poison_status": f"Runtime suspicion analysis unavailable: {exc}",
+                "runtime_poison_available": False,
+            },
+        )
+
     if drift_info.get("score") is not None:
         projection = drift_info.get("projection") or (None, None)
         record_drift_event(
@@ -1137,6 +1212,11 @@ def analyze():
         drift_distance=detection.get("drift_distance"),
         drift_reference=detection.get("drift_reference"),
         drift_projection=detection.get("drift_projection"),
+        runtime_poison_suspicion=detection.get("runtime_poison_suspicion"),
+        runtime_poison_probability=detection.get("runtime_poison_probability"),
+        runtime_poison_severity=detection.get("runtime_poison_severity"),
+        runtime_poison_status=detection.get("runtime_poison_status"),
+        runtime_poison_available=detection.get("runtime_poison_available"),
         detection=detection,
         access_analysis=access_result,
     )

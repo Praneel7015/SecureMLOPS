@@ -67,7 +67,7 @@ const StatusDot = ({ value }: { value?: string }) => {
       ? 'bg-success'
       : v.includes('idle') || v.includes('paused')
         ? 'bg-warning'
-        : v.includes('error') || v.includes('down')
+        : v.includes('error') || v.includes('down') || v.includes('unavailable')
           ? 'bg-destructive'
           : 'bg-muted-foreground/40';
   return <span className={`h-1.5 w-1.5 rounded-full ${tone}`} />;
@@ -145,10 +145,20 @@ export function DashboardOverview({ refreshToken = 0 }: DashboardOverviewProps) 
     { label: 'Total Inferences', value: metrics?.total_inferences ?? 0, icon: Zap },
     { label: 'High Risk Events', value: metrics?.high_risk_events ?? 0, icon: AlertTriangle },
     { label: 'Drift Alerts', value: metrics?.drift_alerts ?? 0, icon: TrendingUp },
+    { label: 'Poisoning Alerts', value: metrics?.poisoning_alerts ?? 0, icon: Shield },
+    { label: 'Dataset Scans', value: metrics?.poisoning_scan_activity ?? 0, icon: Shield },
+    { label: 'Suspicious Datasets', value: metrics?.suspicious_dataset_uploads ?? 0, icon: AlertTriangle },
+    { label: 'High-Risk Training', value: metrics?.high_risk_training_attempts ?? 0, icon: Activity },
+    { label: 'Flagged Samples', value: metrics?.poisoned_sample_count ?? 0, icon: FileCheck },
     { label: 'Models Registered', value: metrics?.models_registered ?? 0, icon: FileCheck },
     { label: 'Active Training', value: metrics?.active_training_jobs ?? 0, icon: PlayCircle },
     { label: 'Last Train Acc.', value: formatPercent(metrics?.last_training_accuracy), icon: Activity },
     { label: 'Avg Drift Score', value: metrics?.average_drift_score ?? 0, icon: TrendingUp },
+    {
+      label: 'Detector',
+      value: metrics?.poisoning_detector_available ? 'Online' : 'Unavailable',
+      icon: Shield,
+    },
     { label: 'Total Events', value: metrics?.total_events ?? 0, icon: Shield },
   ];
 
@@ -179,7 +189,7 @@ export function DashboardOverview({ refreshToken = 0 }: DashboardOverviewProps) 
       )}
 
       {/* Metric grid — razor hairline cells */}
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border lg:grid-cols-4 xl:grid-cols-7">
         {metricCards.map((card) => (
           <div key={card.label} className="bg-card p-5">
             <div className="flex items-center justify-between">
@@ -243,9 +253,11 @@ export function DashboardOverview({ refreshToken = 0 }: DashboardOverviewProps) 
             {[
               ['Monitoring', systemStatus?.monitoring_status, true],
               ['Drift Monitoring', systemStatus?.drift_monitoring_status, true],
+              ['Poisoning Detector', systemStatus?.poisoning_detector_status || 'unknown', true],
               ['Security Engine', systemStatus?.security_engine_status, true],
               ['Last Inference', formatTimestamp(systemStatus?.last_inference_at), false],
               ['Last Drift Event', formatTimestamp(systemStatus?.last_drift_event_at), false],
+              ['Last Poisoning Event', formatTimestamp(systemStatus?.last_poisoning_event_at), false],
             ].map(([label, value, dot]) => (
               <div
                 key={label as string}

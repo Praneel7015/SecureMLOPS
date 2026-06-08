@@ -1,0 +1,28 @@
+{
+  "detector_type": "MLP",
+  "feature_extractor": "resnet18_multilayer",
+  "victim_model": "attacked_model_multi_attack.pth",
+  "layers": ["layer2", "layer3", "avgpool"],
+  "embedding_dimension_before_augmentation": 896,
+  "embedding_dimension_after_augmentation": 899,
+  "scaled": true,
+  "threshold": 0.67,
+  "input_size": 128,
+  "normalization": "imagenet",
+  "batch_size": 32,
+  "augmentation_features": [
+    "l2_norm",
+    "max_confidence",
+    "entropy"
+  ],
+  "classes": ["clean", "poisoned"],
+  "training_security": {
+    "sample_threshold": 0.67,
+    "warning_threshold": 0.5,
+    "dataset_high_risk_ratio": 0.08,
+    "dataset_medium_risk_ratio": 0.03,
+    "dataset_high_max_probability": 0.85,
+    "allow_override": true,
+    "default_decision": "warn_or_block"
+  }
+}

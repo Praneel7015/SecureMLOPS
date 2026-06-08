@@ -14,6 +14,7 @@ const CATEGORY_OPTIONS = [
   { value: 'drift', label: 'Drift' },
   { value: 'training', label: 'Training' },
   { value: 'adversarial', label: 'Adversarial' },
+  { value: 'poisoning', label: 'Poisoning' },
   { value: 'integrity', label: 'Integrity' },
   { value: 'validation', label: 'Validation' },
   { value: 'system', label: 'System' },

@@ -39,6 +39,21 @@ CATEGORY_EVENT_TYPES = {
         "adversarial.allowed",
         "adversarial.escalation",
     ),
+    "poisoning": (
+        "poisoning.detected",
+        "poisoning.high_risk",
+        "poisoning.unavailable",
+        "poisoning.unsupported_architecture",
+        "poisoning.detector_failure",
+        "poisoning.embedding_mismatch",
+        "poisoning.dimension_mismatch",
+        "poisoning.scan_completed",
+        "poisoning.dataset_scan_started",
+        "poisoning.dataset_scan_completed",
+        "poisoning.suspicious_dataset",
+        "poisoning.training_blocked",
+        "poisoning.training_override",
+    ),
     "integrity": (
         "integrity.validation_success",
         "integrity.validation_failure",
@@ -63,6 +78,7 @@ CATEGORY_EVENT_TYPES = {
 
 SECURITY_EVENT_TYPES = (
     *CATEGORY_EVENT_TYPES["adversarial"],
+    *CATEGORY_EVENT_TYPES["poisoning"],
     *CATEGORY_EVENT_TYPES["integrity"],
     "inference.high_risk",
     "inference.blocked",

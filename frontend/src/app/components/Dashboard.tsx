@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState, useRef } from 'react';
+import { Fragment, useEffect, useMemo, useState, useRef, type RefObject } from 'react';
 import { Upload, Image as ImageIcon, CheckCircle2, XCircle, AlertCircle, ChevronDown, ChevronUp, Shield, Settings as SettingsIcon, LogOut, Menu, X, TrendingUp, FileCheck, Activity, Zap, Database, Lock, BarChart3, PlayCircle, Download, RefreshCw, History, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { Wordmark } from './brand/Wordmark';
@@ -125,7 +125,11 @@ export function Dashboard({
   const modelInputRef = useRef<HTMLInputElement>(null);
   const datasetInputRef = useRef<HTMLInputElement>(null);
   const trainingLogRef = useRef<HTMLDivElement>(null);
+  const inferenceErrorRef = useRef<HTMLDivElement>(null);
+  const trainingErrorRef = useRef<HTMLDivElement>(null);
+  const driftErrorRef = useRef<HTMLDivElement>(null);
   const [isLogPinned, setIsLogPinned] = useState(true);
+  const [activeError, setActiveError] = useState<string>('');
 
   const [pipelineStages, setPipelineStages] = useState<PipelineStage[]>([
     { id: 1, name: 'Authentication', status: 'pending', progress: 0 },
@@ -267,6 +271,25 @@ export function Dashboard({
       void loadDriftTelemetry();
     }
   }, [activeSection]);
+
+  useEffect(() => {
+    const errorTargets: Partial<Record<typeof activeSection, { message: string; ref: RefObject<HTMLDivElement> }>> = {
+      inference: messageType === 'error' && message ? { message, ref: inferenceErrorRef } : undefined,
+      training: trainingError ? { message: trainingError, ref: trainingErrorRef } : undefined,
+      monitoring: driftError ? { message: driftError, ref: driftErrorRef } : undefined,
+    };
+    const target = errorTargets[activeSection];
+    if (!target?.message) {
+      setActiveError('');
+      return;
+    }
+
+    setActiveError(target.message);
+    window.setTimeout(() => {
+      target.ref.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      target.ref.current?.focus({ preventScroll: true });
+    }, 0);
+  }, [activeSection, driftError, message, messageType, trainingError]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -764,6 +787,28 @@ export function Dashboard({
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-background">
+      {activeError && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="fixed right-4 top-4 z-[70] flex max-w-md items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-destructive shadow-lg backdrop-blur"
+        >
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-foreground">Error</p>
+            <p className="mt-1 text-sm">{activeError}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActiveError('')}
+            className="rounded p-1 text-destructive/70 transition-colors hover:bg-destructive/10 hover:text-destructive"
+            aria-label="Dismiss error"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       {/* Mobile Header */}
       <div className="lg:hidden sticky top-0 z-40 flex items-center justify-between border-b border-border bg-card/80 px-5 py-3.5 backdrop-blur-xl">
         <Wordmark size="sm" />
@@ -1068,7 +1113,13 @@ export function Dashboard({
           {activeSection === 'inference' && (
             <>
               {message && (
-                <div className={`rounded-lg border px-4 py-3 ${messageType === 'error' ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-success/30 bg-success/10 text-success'}`}>
+                <div
+                  ref={inferenceErrorRef}
+                  tabIndex={messageType === 'error' ? -1 : undefined}
+                  role={messageType === 'error' ? 'alert' : 'status'}
+                  aria-live={messageType === 'error' ? 'assertive' : 'polite'}
+                  className={`rounded-lg border px-4 py-3 outline-none focus:ring-2 focus:ring-ring ${messageType === 'error' ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-success/30 bg-success/10 text-success'}`}
+                >
                   {message}
                 </div>
               )}
@@ -1281,7 +1332,13 @@ export function Dashboard({
           {activeSection === 'training' && (
             <>
               {(trainingError || trainingMessage) && (
-                <div className={`rounded-lg border px-4 py-3 ${trainingError ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-success/30 bg-success/10 text-success'}`}>
+                <div
+                  ref={trainingErrorRef}
+                  tabIndex={trainingError ? -1 : undefined}
+                  role={trainingError ? 'alert' : 'status'}
+                  aria-live={trainingError ? 'assertive' : 'polite'}
+                  className={`rounded-lg border px-4 py-3 outline-none focus:ring-2 focus:ring-ring ${trainingError ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-success/30 bg-success/10 text-success'}`}
+                >
                   {trainingError || trainingMessage}
                 </div>
               )}
@@ -1814,7 +1871,13 @@ export function Dashboard({
               </div>
 
               {(driftError || isDriftLoading) && (
-                <div className={`rounded-lg border px-4 py-3 ${driftError ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-border/30 bg-muted/40 text-muted-foreground'}`}>
+                <div
+                  ref={driftErrorRef}
+                  tabIndex={driftError ? -1 : undefined}
+                  role={driftError ? 'alert' : 'status'}
+                  aria-live={driftError ? 'assertive' : 'polite'}
+                  className={`rounded-lg border px-4 py-3 outline-none focus:ring-2 focus:ring-ring ${driftError ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-border/30 bg-muted/40 text-muted-foreground'}`}
+                >
                   {driftError || 'Loading drift telemetry...'}
                 </div>
               )}

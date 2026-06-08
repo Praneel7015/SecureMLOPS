@@ -31,6 +31,8 @@ def log_security_event(username, result):
         "drift_score": result.get("drift_score"),
         "drift_severity": result.get("drift_severity"),
         "drift_status": result.get("drift_status"),
+        "runtime_poison_suspicion": result.get("runtime_poison_suspicion"),
+        "runtime_poison_probability": result.get("runtime_poison_probability"),
         "timestamp": result.get("timestamp"),
         "filename": result.get("filename"),
     }

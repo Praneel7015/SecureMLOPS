@@ -26,21 +26,29 @@ def build_model(model_type: str, num_classes: int, freeze_backbone: bool = False
     def _weights(weights):
         return None if os.environ.get("SKIP_TORCHVISION_WEIGHTS") == "1" else weights
 
+    def _build_with_fallback(builder, weights):
+        try:
+            return builder(weights=weights)
+        except Exception:
+            if weights is None:
+                raise
+            return builder(weights=None)
+
     if resolved == "resnet18":
         weights = _weights(models.ResNet18_Weights.DEFAULT)
-        model = models.resnet18(weights=weights)
+        model = _build_with_fallback(models.resnet18, weights)
         in_features = model.fc.in_features
         model.fc = torch.nn.Linear(in_features, num_classes)
         backbone_params = [p for name, p in model.named_parameters() if not name.startswith("fc")]
     elif resolved == "efficientnet-b0":
         weights = _weights(models.EfficientNet_B0_Weights.DEFAULT)
-        model = models.efficientnet_b0(weights=weights)
+        model = _build_with_fallback(models.efficientnet_b0, weights)
         in_features = model.classifier[-1].in_features
         model.classifier[-1] = torch.nn.Linear(in_features, num_classes)
         backbone_params = [p for name, p in model.named_parameters() if not name.startswith("classifier")]
     else:
         weights = _weights(models.MobileNet_V3_Large_Weights.DEFAULT)
-        model = models.mobilenet_v3_large(weights=weights)
+        model = _build_with_fallback(models.mobilenet_v3_large, weights)
         in_features = model.classifier[-1].in_features
         model.classifier[-1] = torch.nn.Linear(in_features, num_classes)
         backbone_params = [p for name, p in model.named_parameters() if not name.startswith("classifier")]

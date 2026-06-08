@@ -16,11 +16,14 @@ import {
   SampleImage,
   SupportedModel,
   DatasetSummary,
+  DatasetSecurityReport,
   TrainingJob,
   TrainingModel,
 } from '../api';
 import { DashboardOverview } from './DashboardOverview';
 import { SecurityLogsPanel } from './SecurityLogsPanel';
+import { DatasetSecurityReportCard } from './training/DatasetSecurityReport';
+import { FlaggedSamplesGrid } from './training/FlaggedSamplesGrid';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from './ui/chart';
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Scatter, ScatterChart, XAxis, YAxis } from 'recharts';
 
@@ -178,6 +181,8 @@ export function Dashboard({
     freeze_backbone: false,
   });
   const [selectedDatasetId, setSelectedDatasetId] = useState<string>('');
+  const [securityOverride, setSecurityOverride] = useState(false);
+  const [latestSecurityReport, setLatestSecurityReport] = useState<DatasetSecurityReport | null>(null);
   const [driftEvents, setDriftEvents] = useState<DriftEvent[]>([]);
   const [driftSummary, setDriftSummary] = useState<DriftSummary | null>(null);
   const [driftError, setDriftError] = useState<string>('');
@@ -283,11 +288,12 @@ export function Dashboard({
       return;
     }
 
-    setTrainingMessage('Dataset validated successfully.');
+    setTrainingMessage('Dataset validated and security scanned.');
     setDatasetFile(null);
     if (response.dataset) {
       setDatasets((prev) => [response.dataset!, ...prev.filter((d) => d.dataset_id !== response.dataset?.dataset_id)]);
       setSelectedDatasetId(response.dataset.dataset_id);
+      setLatestSecurityReport(response.security_report || response.dataset.poisoning_scan || null);
     }
     setIsDatasetUploading(false);
   };
@@ -310,15 +316,19 @@ export function Dashboard({
       batch_size: trainingConfig.batch_size,
       learning_rate: trainingConfig.learning_rate,
       freeze_backbone: trainingConfig.freeze_backbone,
+      security_override: securityOverride,
     });
 
     if (!response.ok || !response.job) {
       setTrainingError(response.message || 'Training could not be started.');
+      if (response.security_report) {
+        setLatestSecurityReport(response.security_report);
+      }
       setIsTrainingStarting(false);
       return;
     }
 
-    setTrainingMessage('Training job queued.');
+    setTrainingMessage(response.security_message || 'Training job queued.');
     setActiveJobId(response.job.job_id);
     setActiveJob(response.job);
     setTrainingJobs((prev) => [response.job!, ...prev.filter((job) => job.job_id !== response.job?.job_id)]);
@@ -505,6 +515,16 @@ export function Dashboard({
     const dist = dataset?.class_distribution || {};
     return Object.entries(dist).map(([label, count]) => ({ label, count }));
   }, [datasets, selectedDatasetId]);
+
+  const activeSecurityReport = useMemo(() => {
+    if (latestSecurityReport) {
+      return latestSecurityReport;
+    }
+    const dataset = datasets.find((item) => item.dataset_id === selectedDatasetId);
+    return dataset?.poisoning_scan || null;
+  }, [datasets, latestSecurityReport, selectedDatasetId]);
+
+  const requiresSecurityOverride = activeSecurityReport?.training_decision === 'block';
 
   const classLabelSummary = useMemo(() => {
     const labels = backendResult?.class_names;
@@ -1089,6 +1109,18 @@ export function Dashboard({
                         <div>Status: {backendResult.status.replaceAll('_', ' ')}</div>
                         <div>Anomaly: {backendResult.anomaly ? 'Detected' : 'Normal'}</div>
                         <div>Adversarial: {backendResult.adversarial ? 'Detected' : 'Normal'}</div>
+                        <div className="rounded-md border border-border/60 bg-background/30 p-2 text-xs">
+                          Runtime Poison Suspicion:{' '}
+                          {backendResult.runtime_poison_suspicion
+                            ? 'Elevated'
+                            : backendResult.runtime_poison_available === false
+                              ? 'Unavailable'
+                              : 'Normal'}
+                          {backendResult.runtime_poison_probability !== null &&
+                            backendResult.runtime_poison_probability !== undefined && (
+                              <span> · {Math.round(backendResult.runtime_poison_probability * 100)}%</span>
+                            )}
+                        </div>
                       </div>
                     ) : (
                       <p className="font-mono text-muted-foreground">Signals will appear after an inference run.</p>
@@ -1176,7 +1208,7 @@ export function Dashboard({
                       disabled={isDatasetUploading}
                       className="w-full bg-accent hover:bg-accent-600 disabled:bg-muted disabled:text-muted-foreground text-accent-foreground py-2.5 rounded-lg transition-colors"
                     >
-                      {isDatasetUploading ? 'Uploading...' : 'Upload & Validate'}
+                      {isDatasetUploading ? 'Uploading & Scanning...' : 'Upload, Validate & Scan'}
                     </button>
                   </form>
                   <div className="pt-2">
@@ -1187,6 +1219,11 @@ export function Dashboard({
                           <div key={dataset.dataset_id} className="border border-border rounded-lg p-3">
                             <div className="text-foreground font-mono text-sm">{dataset.source_name || dataset.dataset_id}</div>
                             <div className="text-muted-foreground font-mono text-xs">{dataset.image_count} images · {dataset.class_names.join(', ')}</div>
+                            {dataset.poisoning_scan && (
+                              <div className="mt-1 font-mono text-xs text-accent">
+                                Risk: {dataset.poisoning_scan.dataset_risk_level || 'N/A'} · Flagged: {dataset.poisoning_scan.suspicious_count ?? 0}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -1276,6 +1313,19 @@ export function Dashboard({
                         className="w-5 h-5 rounded border-border text-accent focus:ring-accent"
                       />
                     </label>
+                    {requiresSecurityOverride && (
+                      <label className="flex items-start gap-3 p-3 border border-warning/30 rounded-lg bg-warning/10 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={securityOverride}
+                          onChange={(event) => setSecurityOverride(event.target.checked)}
+                          className="mt-1 w-5 h-5 rounded border-border text-accent focus:ring-accent"
+                        />
+                        <span className="font-mono text-sm text-foreground">
+                          Manual security override required. Dataset poisoning risk is HIGH.
+                        </span>
+                      </label>
+                    )}
                     <button
                       type="submit"
                       disabled={isTrainingStarting}
@@ -1285,6 +1335,11 @@ export function Dashboard({
                     </button>
                   </form>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <DatasetSecurityReportCard report={activeSecurityReport} />
+                <FlaggedSamplesGrid samples={activeSecurityReport?.flagged_samples || []} />
               </div>
 
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">

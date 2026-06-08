@@ -117,6 +117,11 @@ export function DashboardOverview({ username, refreshToken = 0 }: DashboardOverv
           { label: 'Total Inferences', value: metrics?.total_inferences ?? 0, icon: Zap },
           { label: 'High Risk Events', value: metrics?.high_risk_events ?? 0, icon: AlertTriangle },
           { label: 'Drift Alerts', value: metrics?.drift_alerts ?? 0, icon: TrendingUp },
+          { label: 'Dataset Security Scans', value: metrics?.poisoning_scan_activity ?? 0, icon: Shield },
+          { label: 'Poisoning Alerts', value: metrics?.poisoning_alerts ?? 0, icon: Shield },
+          { label: 'Suspicious Datasets', value: metrics?.suspicious_dataset_uploads ?? 0, icon: AlertTriangle },
+          { label: 'High-Risk Training', value: metrics?.high_risk_training_attempts ?? 0, icon: Activity },
+          { label: 'Flagged Samples', value: metrics?.poisoned_sample_count ?? 0, icon: FileCheck },
           { label: 'Models Registered', value: metrics?.models_registered ?? 0, icon: FileCheck },
           { label: 'Active Training Jobs', value: metrics?.active_training_jobs ?? 0, icon: PlayCircle },
           {
@@ -125,6 +130,11 @@ export function DashboardOverview({ username, refreshToken = 0 }: DashboardOverv
             icon: Activity,
           },
           { label: 'Average Drift Score', value: metrics?.average_drift_score ?? 0, icon: TrendingUp },
+          {
+            label: 'Detector Availability',
+            value: metrics?.poisoning_detector_available ? 'Online' : 'Unavailable',
+            icon: Shield,
+          },
           { label: 'Total Events', value: metrics?.total_events ?? 0, icon: Shield },
         ].map((card) => (
           <div key={card.label} className="rounded-lg border border-border bg-card p-4">
@@ -186,9 +196,11 @@ export function DashboardOverview({ username, refreshToken = 0 }: DashboardOverv
             {[
               ['Monitoring', systemStatus?.monitoring_status],
               ['Drift Monitoring', systemStatus?.drift_monitoring_status],
+              ['Poisoning Detector', systemStatus?.poisoning_detector_status || 'unknown'],
               ['Security Engine', systemStatus?.security_engine_status],
               ['Last Inference', formatTimestamp(systemStatus?.last_inference_at)],
               ['Last Drift Event', formatTimestamp(systemStatus?.last_drift_event_at)],
+              ['Last Poisoning Event', formatTimestamp(systemStatus?.last_poisoning_event_at)],
             ].map(([label, value]) => (
               <div key={label} className="flex items-center justify-between gap-3 border-b border-border/50 pb-2">
                 <span className="text-muted-foreground">{label}</span>

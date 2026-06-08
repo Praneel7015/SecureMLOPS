@@ -1,82 +1,92 @@
 @custom-variant dark (&:is(.dark *));
 
+/* Echelon type tokens — exposes font-display / font-sans / font-mono utilities */
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, 'SFMono-Regular', monospace;
+}
+
 :root {
   --font-size: 16px;
 
-  /* SecureMLOPS Light Theme */
-  --background: #F7F8FA;
-  --foreground: #0F1113;
-  --card: #ffffff;
-  --card-foreground: #0F1113;
-  --popover: #ffffff;
-  --popover-foreground: #0F1113;
-  --primary: #0F1113;
-  --primary-foreground: #F7F8FA;
-  --secondary: #F7F8FA;
-  --secondary-foreground: #0F1113;
-  --muted: #E5E7EB;
-  --muted-foreground: #7A7E86;
+  /* Echelon — Light (editorial paper) */
+  --background: #F7F7F4;
+  --foreground: #0A0A0B;
+  --card: #FFFFFF;
+  --card-foreground: #0A0A0B;
+  --popover: #FFFFFF;
+  --popover-foreground: #0A0A0B;
+  --primary: #0A0A0B;
+  --primary-foreground: #F7F7F4;
+  --secondary: #F0F0EC;
+  --secondary-foreground: #0A0A0B;
+  --muted: #ECECE7;
+  --muted-foreground: #6A6A66;
   --accent: #7CFF00;
-  --accent-foreground: #0F1113;
-  --accent-600: #5EE600;
-  --destructive: #FF5C6C;
+  --accent-foreground: #0A0A0B;
+  --accent-600: #6FE600;
+  --destructive: #E5484D;
   --destructive-foreground: #ffffff;
   --success: #1FB764;
   --success-foreground: #ffffff;
   --warning: #F2B824;
-  --warning-foreground: #0F1113;
-  --border: rgba(0, 0, 0, 0.08);
-  --input: rgba(0, 0, 0, 0.08);
-  --input-background: #ffffff;
-  --switch-background: #E5E7EB;
+  --warning-foreground: #0A0A0B;
+  --border: rgba(10, 10, 11, 0.10);
+  --border-strong: rgba(10, 10, 11, 0.16);
+  --input: rgba(10, 10, 11, 0.12);
+  --input-background: #FFFFFF;
+  --switch-background: #DCDCD6;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
   --ring: #7CFF00;
   --radius: 0.5rem;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #0F1113;
-  --sidebar-primary: #0F1113;
-  --sidebar-primary-foreground: #F7F8FA;
-  --sidebar-accent: #F7F8FA;
-  --sidebar-accent-foreground: #0F1113;
-  --sidebar-border: rgba(0, 0, 0, 0.08);
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #0A0A0B;
+  --sidebar-primary: #0A0A0B;
+  --sidebar-primary-foreground: #F7F7F4;
+  --sidebar-accent: #F0F0EC;
+  --sidebar-accent-foreground: #0A0A0B;
+  --sidebar-border: rgba(10, 10, 11, 0.10);
   --sidebar-ring: #7CFF00;
 }
 
 .dark {
-  /* SecureMLOPS Dark Theme */
-  --background: #0F1113;
-  --foreground: #F7F8FA;
-  --card: #1A1C1F;
-  --card-foreground: #F7F8FA;
-  --popover: #1A1C1F;
-  --popover-foreground: #F7F8FA;
-  --primary: #F7F8FA;
-  --primary-foreground: #0F1113;
-  --secondary: #1A1C1F;
-  --secondary-foreground: #F7F8FA;
-  --muted: #2A2D32;
-  --muted-foreground: #7A7E86;
+  /* Echelon — Dark (obsidian) */
+  --background: #0A0A0B;
+  --foreground: #F4F4F1;
+  --card: #131316;
+  --card-foreground: #F4F4F1;
+  --popover: #131316;
+  --popover-foreground: #F4F4F1;
+  --primary: #F4F4F1;
+  --primary-foreground: #0A0A0B;
+  --secondary: #18181B;
+  --secondary-foreground: #F4F4F1;
+  --muted: #1D1D21;
+  --muted-foreground: #8C8C90;
   --accent: #7CFF00;
-  --accent-foreground: #0F1113;
-  --accent-600: #5EE600;
+  --accent-foreground: #0A0A0B;
+  --accent-600: #6FE600;
   --destructive: #FF5C6C;
   --destructive-foreground: #ffffff;
-  --success: #1FB764;
-  --success-foreground: #ffffff;
+  --success: #2BD27B;
+  --success-foreground: #06140C;
   --warning: #F2B824;
-  --warning-foreground: #0F1113;
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.08);
-  --input-background: #1A1C1F;
+  --warning-foreground: #0A0A0B;
+  --border: rgba(244, 244, 241, 0.10);
+  --border-strong: rgba(244, 244, 241, 0.18);
+  --input: rgba(244, 244, 241, 0.12);
+  --input-background: #131316;
+  --switch-background: #2A2A2E;
   --ring: #7CFF00;
-  --sidebar: #1A1C1F;
-  --sidebar-foreground: #F7F8FA;
-  --sidebar-primary: #F7F8FA;
-  --sidebar-primary-foreground: #0F1113;
-  --sidebar-accent: #2A2D32;
-  --sidebar-accent-foreground: #F7F8FA;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar: #0F0F11;
+  --sidebar-foreground: #F4F4F1;
+  --sidebar-primary: #F4F4F1;
+  --sidebar-primary-foreground: #0A0A0B;
+  --sidebar-accent: #1D1D21;
+  --sidebar-accent-foreground: #F4F4F1;
+  --sidebar-border: rgba(244, 244, 241, 0.10);
   --sidebar-ring: #7CFF00;
 }
 
@@ -103,6 +113,7 @@
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-input: var(--input);
   --color-input-background: var(--input-background);
   --color-switch-background: var(--switch-background);
@@ -128,39 +139,48 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: 'cv05', 'ss01';
   }
 
   /**
-  * Default typography styles for HTML elements (h1-h4, p, label, button, input).
-  * These are in @layer base, so Tailwind utility classes (like text-sm, text-lg) automatically override them.
+  * Default typography. Display headings use Space Grotesk with tight Swiss tracking.
+  * In @layer base, so Tailwind utilities (text-sm, font-mono, tracking-*) still override.
   */
 
   html {
     font-size: var(--font-size);
   }
 
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.025em;
+  }
+
   h1 {
     font-size: var(--text-2xl);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
+    font-weight: 600;
+    line-height: 1.15;
   }
 
   h2 {
     font-size: var(--text-xl);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
+    font-weight: 600;
+    line-height: 1.2;
   }
 
   h3 {
     font-size: var(--text-lg);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
+    font-weight: 500;
+    line-height: 1.3;
   }
 
   h4 {
     font-size: var(--text-base);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
+    font-weight: 500;
+    line-height: 1.4;
   }
 
   label {
@@ -170,14 +190,53 @@
   }
 
   button {
-    font-size: var(--text-base);
     font-weight: var(--font-weight-medium);
-    line-height: 1.5;
   }
 
   input {
     font-size: var(--text-base);
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
+  }
+}
+
+@layer utilities {
+  /* Eyebrow / kicker — the mono micro-label used across the editorial system */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  /* Razor Swiss hairline grid background */
+  .grid-lines {
+    background-image:
+      linear-gradient(to right, var(--border) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+    background-size: 64px 64px;
+  }
+
+  /* Subtle film grain for depth on flat editorial surfaces */
+  .grain {
+    position: relative;
+  }
+  .grain::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Lime focus glow used surgically on the single accent */
+  .accent-glow {
+    box-shadow: 0 0 0 1px var(--accent), 0 0 32px -8px var(--accent);
+  }
+
+  .text-balance {
+    text-wrap: balance;
   }
 }

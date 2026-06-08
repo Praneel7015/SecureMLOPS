@@ -1,9 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=DM+Mono:wght@300;400;500&display=swap');
-
-body {
-  font-family: 'Outfit', sans-serif;
-}
-
-code, pre, .font-mono {
-  font-family: 'DM Mono', monospace;
-}
+/* Echelon type system — Pure Swiss grotesk
+   Display: Space Grotesk · Body/UI: Inter · Data/labels: DM Mono */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;450;500;600;700&family=DM+Mono:wght@300;400;500&display=swap');

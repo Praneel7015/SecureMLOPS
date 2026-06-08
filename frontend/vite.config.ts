@@ -39,6 +39,8 @@ export default defineConfig({
       '/api': 'http://127.0.0.1:5000',
       '/login': 'http://127.0.0.1:5000',
       '/logout': 'http://127.0.0.1:5000',
+      '/register': 'http://127.0.0.1:5000',
+      '/auth': 'http://127.0.0.1:5000',
       '/analyze': 'http://127.0.0.1:5000',
       '/settings': 'http://127.0.0.1:5000',
       '/uploads': 'http://127.0.0.1:5000',

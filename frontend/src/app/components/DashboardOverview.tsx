@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   Activity,
   AlertTriangle,
@@ -36,7 +36,44 @@ const formatPercent = (value?: number | null) => {
   return `${(value * 100).toFixed(1)}%`;
 };
 
-export function DashboardOverview({ username, refreshToken = 0 }: DashboardOverviewProps) {
+function Panel({
+  title,
+  action,
+  children,
+  className,
+}: {
+  title: string;
+  action?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`flex flex-col rounded-xl border border-border bg-card ${className ?? ''}`}>
+      <div className="flex items-center justify-between border-b border-border px-5 py-4">
+        <h2 className="font-display text-base font-semibold tracking-tight text-foreground">
+          {title}
+        </h2>
+        {action}
+      </div>
+      <div className="flex-1 p-5">{children}</div>
+    </div>
+  );
+}
+
+const StatusDot = ({ value }: { value?: string }) => {
+  const v = (value || '').toLowerCase();
+  const tone =
+    v.includes('active') || v.includes('online') || v.includes('running') || v.includes('healthy')
+      ? 'bg-success'
+      : v.includes('idle') || v.includes('paused')
+        ? 'bg-warning'
+        : v.includes('error') || v.includes('down') || v.includes('unavailable')
+          ? 'bg-destructive'
+          : 'bg-muted-foreground/40';
+  return <span className={`h-1.5 w-1.5 rounded-full ${tone}`} />;
+};
+
+export function DashboardOverview({ refreshToken = 0 }: DashboardOverviewProps) {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [activity, setActivity] = useState<SecurityEvent[]>([]);
   const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([]);
@@ -86,9 +123,9 @@ export function DashboardOverview({ username, refreshToken = 0 }: DashboardOverv
 
   if (loading && !summary) {
     return (
-      <div className="flex items-center justify-center py-20 text-muted-foreground">
-        <RefreshCw className="mr-2 h-5 w-5 animate-spin text-accent" />
-        Loading operational dashboard…
+      <div className="flex items-center justify-center gap-2 py-24 text-muted-foreground">
+        <RefreshCw className="h-4 w-4 animate-spin text-accent" />
+        <span className="eyebrow">Loading overview…</span>
       </div>
     );
   }
@@ -104,70 +141,91 @@ export function DashboardOverview({ username, refreshToken = 0 }: DashboardOverv
   const metrics = summary?.metrics;
   const systemStatus = summary?.system_status;
 
+  const metricCards = [
+    { label: 'Total Inferences', value: metrics?.total_inferences ?? 0, icon: Zap },
+    { label: 'High Risk Events', value: metrics?.high_risk_events ?? 0, icon: AlertTriangle },
+    { label: 'Drift Alerts', value: metrics?.drift_alerts ?? 0, icon: TrendingUp },
+    { label: 'Poisoning Alerts', value: metrics?.poisoning_alerts ?? 0, icon: Shield },
+    { label: 'Dataset Scans', value: metrics?.poisoning_scan_activity ?? 0, icon: Shield },
+    { label: 'Suspicious Datasets', value: metrics?.suspicious_dataset_uploads ?? 0, icon: AlertTriangle },
+    { label: 'High-Risk Training', value: metrics?.high_risk_training_attempts ?? 0, icon: Activity },
+    { label: 'Flagged Samples', value: metrics?.poisoned_sample_count ?? 0, icon: FileCheck },
+    { label: 'Models Registered', value: metrics?.models_registered ?? 0, icon: FileCheck },
+    { label: 'Active Training', value: metrics?.active_training_jobs ?? 0, icon: PlayCircle },
+    { label: 'Last Train Acc.', value: formatPercent(metrics?.last_training_accuracy), icon: Activity },
+    { label: 'Avg Drift Score', value: metrics?.average_drift_score ?? 0, icon: TrendingUp },
+    {
+      label: 'Detector',
+      value: metrics?.poisoning_detector_available ? 'Online' : 'Unavailable',
+      icon: Shield,
+    },
+    { label: 'Total Events', value: metrics?.total_events ?? 0, icon: Shield },
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Page header */}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <span className="eyebrow text-accent">Console / Overview</span>
+          <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-foreground">
+            Operational overview
+          </h1>
+        </div>
+        <button
+          type="button"
+          onClick={() => loadData(false)}
+          className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:border-border-strong hover:text-foreground"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Refresh
+        </button>
+      </div>
+
       {error && (
         <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {[
-          { label: 'Total Inferences', value: metrics?.total_inferences ?? 0, icon: Zap },
-          { label: 'High Risk Events', value: metrics?.high_risk_events ?? 0, icon: AlertTriangle },
-          { label: 'Drift Alerts', value: metrics?.drift_alerts ?? 0, icon: TrendingUp },
-          { label: 'Dataset Security Scans', value: metrics?.poisoning_scan_activity ?? 0, icon: Shield },
-          { label: 'Poisoning Alerts', value: metrics?.poisoning_alerts ?? 0, icon: Shield },
-          { label: 'Suspicious Datasets', value: metrics?.suspicious_dataset_uploads ?? 0, icon: AlertTriangle },
-          { label: 'High-Risk Training', value: metrics?.high_risk_training_attempts ?? 0, icon: Activity },
-          { label: 'Flagged Samples', value: metrics?.poisoned_sample_count ?? 0, icon: FileCheck },
-          { label: 'Models Registered', value: metrics?.models_registered ?? 0, icon: FileCheck },
-          { label: 'Active Training Jobs', value: metrics?.active_training_jobs ?? 0, icon: PlayCircle },
-          {
-            label: 'Last Training Accuracy',
-            value: formatPercent(metrics?.last_training_accuracy),
-            icon: Activity,
-          },
-          { label: 'Average Drift Score', value: metrics?.average_drift_score ?? 0, icon: TrendingUp },
-          {
-            label: 'Detector Availability',
-            value: metrics?.poisoning_detector_available ? 'Online' : 'Unavailable',
-            icon: Shield,
-          },
-          { label: 'Total Events', value: metrics?.total_events ?? 0, icon: Shield },
-        ].map((card) => (
-          <div key={card.label} className="rounded-lg border border-border bg-card p-4">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">{card.label}</span>
-              <card.icon className="h-5 w-5 text-accent" />
+      {/* Metric grid — razor hairline cells */}
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border lg:grid-cols-4 xl:grid-cols-7">
+        {metricCards.map((card) => (
+          <div key={card.label} className="bg-card p-5">
+            <div className="flex items-center justify-between">
+              <span className="eyebrow text-muted-foreground/60">{card.label}</span>
+              <card.icon className="h-4 w-4 text-muted-foreground/40" strokeWidth={1.75} />
             </div>
-            <div className="text-2xl text-foreground">{card.value}</div>
+            <div className="mt-3 font-mono text-3xl font-medium tracking-tight text-foreground">
+              {card.value}
+            </div>
           </div>
         ))}
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <div className="rounded-lg border border-border bg-card p-6 xl:col-span-2">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-foreground">Recent Activity</h2>
+        <Panel
+          title="Recent activity"
+          className="xl:col-span-2"
+          action={
             <button
               type="button"
               onClick={() => loadData(false)}
-              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-accent"
+              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
-              <RefreshCw className="h-4 w-4" />
+              <RefreshCw className="h-3.5 w-3.5" />
               Refresh
             </button>
-          </div>
+          }
+        >
           {activity.length === 0 ? (
             <p className="font-mono text-sm text-muted-foreground">No platform activity recorded yet.</p>
           ) : (
-            <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
+            <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
               {activity.map((event) => (
                 <div
                   key={event.id}
-                  className="rounded-md border border-border/70 bg-background/40 p-3"
+                  className="rounded-lg border border-border bg-background/40 p-3 transition-colors hover:border-border-strong"
                 >
                   <div className="flex flex-wrap items-center gap-2">
                     <SeverityBadge severity={event.severity} />
@@ -188,43 +246,49 @@ export function DashboardOverview({ username, refreshToken = 0 }: DashboardOverv
               ))}
             </div>
           )}
-        </div>
+        </Panel>
 
-        <div className="rounded-lg border border-border bg-card p-6">
-          <h2 className="mb-4 text-foreground">Quick System Status</h2>
-          <div className="space-y-3 font-mono text-sm">
+        <Panel title="System status">
+          <div className="space-y-3 text-sm">
             {[
-              ['Monitoring', systemStatus?.monitoring_status],
-              ['Drift Monitoring', systemStatus?.drift_monitoring_status],
-              ['Poisoning Detector', systemStatus?.poisoning_detector_status || 'unknown'],
-              ['Security Engine', systemStatus?.security_engine_status],
-              ['Last Inference', formatTimestamp(systemStatus?.last_inference_at)],
-              ['Last Drift Event', formatTimestamp(systemStatus?.last_drift_event_at)],
-              ['Last Poisoning Event', formatTimestamp(systemStatus?.last_poisoning_event_at)],
-            ].map(([label, value]) => (
-              <div key={label} className="flex items-center justify-between gap-3 border-b border-border/50 pb-2">
+              ['Monitoring', systemStatus?.monitoring_status, true],
+              ['Drift Monitoring', systemStatus?.drift_monitoring_status, true],
+              ['Poisoning Detector', systemStatus?.poisoning_detector_status || 'unknown', true],
+              ['Security Engine', systemStatus?.security_engine_status, true],
+              ['Last Inference', formatTimestamp(systemStatus?.last_inference_at), false],
+              ['Last Drift Event', formatTimestamp(systemStatus?.last_drift_event_at), false],
+              ['Last Poisoning Event', formatTimestamp(systemStatus?.last_poisoning_event_at), false],
+            ].map(([label, value, dot]) => (
+              <div
+                key={label as string}
+                className="flex items-center justify-between gap-3 border-b border-border/60 pb-2.5 last:border-0 last:pb-0"
+              >
                 <span className="text-muted-foreground">{label}</span>
-                <span className="truncate text-foreground">{value || '—'}</span>
+                <span className="flex items-center gap-2 truncate font-mono text-xs text-foreground">
+                  {dot ? <StatusDot value={value as string} /> : null}
+                  {(value as string) || '—'}
+                </span>
               </div>
             ))}
           </div>
-        </div>
+        </Panel>
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <div className="rounded-lg border border-border bg-card p-6">
-          <h2 className="mb-4 text-foreground">Recent Training</h2>
+        <Panel title="Recent training">
           {(summary?.recent_training || []).length === 0 ? (
             <p className="font-mono text-sm text-muted-foreground">No training jobs yet.</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {summary?.recent_training.map((job) => (
-                <div key={job.job_id} className="rounded-md border border-border/70 p-3">
+                <div key={job.job_id} className="rounded-lg border border-border p-3">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-mono text-xs text-accent">{job.model_type || 'unknown'}</span>
-                    <span className="font-mono text-xs uppercase text-muted-foreground">{job.status}</span>
+                    <span className="font-mono text-[0.7rem] uppercase tracking-wider text-muted-foreground">
+                      {job.status}
+                    </span>
                   </div>
-                  <p className="mt-1 text-sm text-foreground">
+                  <p className="mt-1.5 text-sm text-foreground">
                     Val accuracy: {formatPercent(job.validation_accuracy)}
                   </p>
                   <p className="font-mono text-xs text-muted-foreground">
@@ -234,16 +298,15 @@ export function DashboardOverview({ username, refreshToken = 0 }: DashboardOverv
               ))}
             </div>
           )}
-        </div>
+        </Panel>
 
-        <div className="rounded-lg border border-border bg-card p-6">
-          <h2 className="mb-4 text-foreground">Recent Security Events</h2>
+        <Panel title="Recent security events">
           {securityEvents.length === 0 ? (
             <p className="font-mono text-sm text-muted-foreground">No security events recorded.</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {securityEvents.map((event) => (
-                <details key={event.id} className="rounded-md border border-border/70 p-3">
+                <details key={event.id} className="group rounded-lg border border-border p-3">
                   <summary className="cursor-pointer list-none">
                     <div className="flex items-center gap-2">
                       <SeverityBadge severity={event.severity} />
@@ -258,21 +321,20 @@ export function DashboardOverview({ username, refreshToken = 0 }: DashboardOverv
               ))}
             </div>
           )}
-        </div>
+        </Panel>
 
-        <div className="rounded-lg border border-border bg-card p-6">
-          <div className="mb-4 flex items-center gap-2">
-            <Database className="h-5 w-5 text-accent" />
-            <h2 className="text-foreground">Model Registry Snapshot</h2>
-          </div>
+        <Panel title="Model registry">
           {(summary?.recent_models || []).length === 0 ? (
             <p className="font-mono text-sm text-muted-foreground">No registered models yet.</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {summary?.recent_models.map((model) => (
-                <div key={model.model_id} className="rounded-md border border-border/70 p-3">
-                  <p className="text-sm text-foreground">{model.model_label || model.model_type}</p>
-                  <p className="font-mono text-xs text-muted-foreground">
+                <div key={model.model_id} className="rounded-lg border border-border p-3">
+                  <div className="flex items-center gap-2">
+                    <Database className="h-3.5 w-3.5 text-muted-foreground/50" />
+                    <p className="text-sm text-foreground">{model.model_label || model.model_type}</p>
+                  </div>
+                  <p className="mt-1 font-mono text-xs text-muted-foreground">
                     {model.num_classes} classes · {model.inference_ready ? 'inference ready' : 'pending'}
                   </p>
                   <p className="font-mono text-xs text-muted-foreground">
@@ -282,10 +344,8 @@ export function DashboardOverview({ username, refreshToken = 0 }: DashboardOverv
               ))}
             </div>
           )}
-        </div>
+        </Panel>
       </div>
-
-      <p className="font-mono text-xs text-muted-foreground">Signed in as {username}</p>
     </div>
   );
 }

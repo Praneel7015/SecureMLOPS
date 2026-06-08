@@ -1,9 +1,10 @@
-import { ChevronDown, ChevronUp, Shield } from 'lucide-react';
+import { RefreshCw, Shield } from 'lucide-react';
 import { DatasetSecurityReport } from '../../api';
 
 type DatasetSecurityReportCardProps = {
   report?: DatasetSecurityReport | null;
   title?: string;
+  isLoading?: boolean;
 };
 
 const severityClass = (severity?: string) => {
@@ -21,7 +22,22 @@ const formatPercent = (value?: number | null) => {
 export function DatasetSecurityReportCard({
   report,
   title = 'Dataset Security Scan',
+  isLoading = false,
 }: DatasetSecurityReportCardProps) {
+  if (isLoading) {
+    return (
+      <div className="rounded-lg border border-border bg-card p-6">
+        <div className="mb-3 flex items-center gap-2">
+          <RefreshCw className="h-5 w-5 animate-spin text-accent" />
+          <h3 className="text-foreground">{title}</h3>
+        </div>
+        <p className="font-mono text-sm text-muted-foreground">
+          Validating dataset and running poisoning security scan...
+        </p>
+      </div>
+    );
+  }
+
   if (!report) {
     return (
       <div className="rounded-lg border border-border bg-card p-6">

@@ -3,6 +3,7 @@ import { FlaggedSample } from '../../api';
 
 type FlaggedSamplesGridProps = {
   samples?: FlaggedSample[];
+  isLoading?: boolean;
 };
 
 const severityClass = (severity?: string) => {
@@ -11,8 +12,19 @@ const severityClass = (severity?: string) => {
   return 'bg-muted/40 text-muted-foreground';
 };
 
-export function FlaggedSamplesGrid({ samples = [] }: FlaggedSamplesGridProps) {
+export function FlaggedSamplesGrid({ samples = [], isLoading = false }: FlaggedSamplesGridProps) {
   const [expandedPath, setExpandedPath] = useState<string | null>(null);
+
+  if (isLoading) {
+    return (
+      <div className="rounded-lg border border-border bg-card p-6">
+        <h3 className="mb-2 text-foreground">Flagged Samples</h3>
+        <p className="font-mono text-sm text-muted-foreground">
+          Suspicious sample results will appear after the poisoning scan completes.
+        </p>
+      </div>
+    );
+  }
 
   if (!samples.length) {
     return (
